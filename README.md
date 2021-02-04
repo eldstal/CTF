@@ -12,6 +12,50 @@ Keeps a running copy of the CTF state and identifies changes. Sends events to th
 Receives specific updates from the Middle-end and renders it. 
 
 
+# Protocols
+
+## Back -> Middle
+Backend sends a message periodically (poll the server or whatever).
+
+A message is a tuple of `("message_type", { "data" : 1234 })` as specified below:
+
+
+
+```python
+(
+    "scoreboard",
+    {
+        "scores": [
+                     {
+                        "id": "team_id_1",
+                        "name": "LuftensHjaltar",
+                        "place": 69,
+                        "score": 31337
+                     },
+                     ...
+                  ]
+    }
+)
+```
+
+
+```python
+(
+    "challenges",
+    {
+        "challenges" = [
+                           {
+                               "id" : "chall_id_1",
+                               "solves": [ "team_id_1", ... ],
+                               "name": "S4n1ty Ch3ck",
+                               "points": 25
+                            },
+                            ...
+                       ]
+    }
+)
+```
+
 
 # TODO
 All the above.
