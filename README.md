@@ -29,3 +29,6 @@ Probably only need one, which is nice.
 A simple print-a-table thing to begin with
 
 After that, the [sky](https://blessed.readthedocs.io/en/latest/) is the limit!
+
+## Nepotism
+Support for "special" teams to always keep visible. My team is blue, the bad guys are gray. Boo, those guys!
