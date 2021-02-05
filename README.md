@@ -72,8 +72,8 @@ Omitted fields indicate that data is not available, so frontend should format ac
 (
     "boot",
     {
-        "scoreboard": [  same format as scoreboard snapshot  ]
-        "challenges": [  same format as challenges snapshot  ]
+        "scoreboard": {  same format as scoreboard snapshot  }
+        "challenges": {  same format as challenges snapshot  }
     }
 )
 ```

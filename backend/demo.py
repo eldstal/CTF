@@ -7,7 +7,17 @@ from copy import deepcopy as CP
 
 class BackEnd:
 
+    @staticmethod
+    def help():
+        return [
+            "url: none",
+            "auth: none"
+        ]
 
+    @staticmethod
+    def supports(conf, url):
+        # This backend should never be autodetected
+        return False
 
     def __init__(self, conf, middleend):
         self.conf = conf
@@ -114,10 +124,8 @@ class BackEnd:
 
         # Write the new ranking back into the saved scoreboard
         place = 1
-        #print("Ranking:")
         for tid,_,_ in new_ranking:
             self.teams[tid]["place"] = place
-            #print(f"  {place}: {self.teams[tid]['score']}  {tid}  {self.teams[tid]['name']}")
             place += 1
 
     def _add_new_team(self):

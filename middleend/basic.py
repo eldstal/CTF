@@ -26,6 +26,11 @@ class MiddleEnd:
 
         }
 
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 
     # A snapshot of some data from the backend
     def handle_snapshot(self, snapshot):
