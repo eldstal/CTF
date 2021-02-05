@@ -49,6 +49,9 @@ def load_config():
     parser.add_argument("--list-backends", "-B", action="store_true",
                         help="List known frontends")
 
+    parser.add_argument("--poll-interval", "-i", type=int,
+                        help="Seconds between server polling. Don't set this too low!")
+
     parser.add_argument("--config", "-c", type=str, default="~/.ctfront/config.json",
                         help="Load a configuration file.")
 
@@ -88,8 +91,11 @@ def load_config():
                 conf[conf_key] = default
 
     # Override the loaded config with command line options
-    override(conf, "frontend", args.frontend)
+    override(conf, "frontend", args.frontend, [])
     override(conf, "backend", args.backend, "auto")
+    override(conf, "url", args.url, "")
+    override(conf, "auth", args.auth, "")
+    override(conf, "poll-interval", args.poll_interval, 60)
 
 
     return conf
@@ -100,10 +106,14 @@ def main():
     if conf is None:
         return 1
 
-    print(conf)
+    if len(conf["frontend"]) == 0:
+        print("No frontend specified. Look at --list-frontends")
+        return 1
 
     front = [ FRONTENDS[name](conf) for name in conf["frontend"] ]
+
     middle = middleend.basic.MiddleEnd(conf, front)
+
     back = BACKENDS[conf["backend"]](conf, middle)
 
     if back is None:

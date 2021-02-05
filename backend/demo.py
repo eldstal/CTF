@@ -11,7 +11,8 @@ class BackEnd:
     def help():
         return [
             "url: none",
-            "auth: none"
+            "auth: none",
+            "poll-interval: seconds",
         ]
 
     @staticmethod
@@ -67,7 +68,7 @@ class BackEnd:
         self._send_snapshot()
 
         while True:
-            time.sleep(1)
+            time.sleep(self.conf["poll-interval"])
             self._random_event()
             self._send_snapshot()
 
