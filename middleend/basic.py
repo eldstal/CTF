@@ -1,8 +1,15 @@
 from copy import deepcopy as CP
 
 class MiddleEnd:
-    def __init__(self, frontend):
-        self.front = frontend
+    def __init__(self, frontends):
+        # If the user eats crayons and passes in a single frontend instead of a list,
+        # that's fine. It's fine. We can clean up your mess for you. No problem.
+        try:
+            check = iter(frontends)
+        except:
+            frontends = [frontends]
+
+        self.frontends = frontends
         self.booted = False
 
         # The internal CTF snapshot
@@ -67,44 +74,6 @@ class MiddleEnd:
 
         send_func(old_entry, new_entry, old_value)
 
-    def _send_team_score(self, old_entry, new_entry, old_value):
-        self._send_event(
-            ( "score", {
-                       "team_id": new_entry["team_id"],
-                       "old_score": old_value,
-                       "score": new_entry["score"]
-                       }
-            )
-        )
-
-    def _send_team_place(self, old_entry, new_entry, old_value):
-        self._send_event(
-            ( "place", {
-                       "team_id": new_entry["team_id"],
-                       "old_place": old_value,
-                       "place": new_entry["place"]
-                       }
-            )
-        )
-
-
-    def _send_challenge_solves(self, old_entry, new_entry, old_value):
-        is_first = False
-        for tid in new_entry["solves"]:
-            if tid in old_value: continue
-
-            is_first = (len(old_value) == 0) and not is_first
-
-            self._send_event(
-                ( "solve", {
-                           "team_id": tid,
-                           "challenge_id": new_entry["challenge_id"],
-                           "first": is_first
-                           }
-                )
-            )
-
-
     def _handle_scoreboard(self, in_data):
         # Diff against the old list and generate events
         for new_entry in in_data["scores"]:
@@ -154,11 +123,49 @@ class MiddleEnd:
 
     def _send_boot(self):
         payload = {}
-        payload["scoreboard"] = CP(self.ctfstate["scoreboard"])
+        payload["scoreboard"] = self.ctfstate["scoreboard"]
         if len(self.ctfstate["challenges"]["challenges"]) > 0:
-            payload["challenges"] = CP(self.ctfstate["challenges"])
+            payload["challenges"] = self.ctfstate["challenges"]
 
         self._send_event( ("boot", payload) )
+
+    def _send_team_score(self, old_entry, new_entry, old_value):
+        self._send_event(
+            ( "score", {
+                       "team_id": new_entry["team_id"],
+                       "old_score": old_value,
+                       "score": new_entry["score"]
+                       }
+            )
+        )
+
+    def _send_team_place(self, old_entry, new_entry, old_value):
+        self._send_event(
+            ( "place", {
+                       "team_id": new_entry["team_id"],
+                       "old_place": old_value,
+                       "place": new_entry["place"]
+                       }
+            )
+        )
+
+
+    def _send_challenge_solves(self, old_entry, new_entry, old_value):
+        is_first = False
+        for tid in new_entry["solves"]:
+            if tid in old_value: continue
+
+            is_first = (len(old_value) == 0) and not is_first
+
+            self._send_event(
+                ( "solve", {
+                           "team_id": tid,
+                           "challenge_id": new_entry["challenge_id"],
+                           "first": is_first
+                           }
+                )
+            )
+
 
 
     # Drop events before boot event has been sent out
@@ -170,8 +177,9 @@ class MiddleEnd:
                 return
             self.booted = True
 
-        # Prevent accidental leaks of internal object references
-        self.front.handle_event(CP(event))
+        for front in self.frontends:
+            # Prevent accidental leaks of internal object references
+            front.handle_event(CP(event))
 
 
 
