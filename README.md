@@ -5,10 +5,12 @@ CTF Terminal Frontend
 Fetches scoreboard and team stats and stuff from a CTF server. Tailor one to whatever score system the event is using.
 
 ## Middle-end
-Keeps a running copy of the CTF state and identifies changes. Sends events to the front-end
+Keeps a running copy of the CTF state and identifies changes. Sends events to the front-end when something interesting changes.
 
 ## Front-end
-Receives specific updates from the Middle-end and renders it. 
+Receives specific updates from the Middle-end and renders it.
+
+Obviously, the front-end is free to ignore events as needed. You could make a front-end which only flashes your keyboard LEDs when `p4` scores points!
 
 
 # Protocols
@@ -131,18 +133,18 @@ Omitted fields indicate that data is not available, so frontend should format ac
 All the above.
 
 ## Backends
-- A demo backend that just exercises the various features
 - CTFd
 - rCTF
 - ...
 
-## Middle-end
-Probably only need one, which is nice.
+Auto-detection would be cool, so the user can provide a URL and a proper backend is selected automatically. This should be possible with some well-chosen fingerprints.
 
-## Front-end
+## Frontend
 A simple print-a-table thing to begin with
 
 After that, the [sky](https://blessed.readthedocs.io/en/latest/) is the limit!
+
+Support is in place for multiple frontends active at the same time, so maybe one for sound, one for video, one for external lighting effects, etc.
 
 ## Nepotism
 Support for "special" teams to always keep visible. My team is blue, the bad guys are gray. Boo, those guys!
