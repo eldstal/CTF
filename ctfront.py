@@ -10,9 +10,13 @@ import backend.demo
 def main():
     print("Let's do this")
 
-    f = frontend.debug.FrontEnd()
-    m = middleend.basic.MiddleEnd(f)
-    b = backend.demo.BackEnd(m)
+    conf = {}
+
+    f = frontend.debug.FrontEnd(conf)
+    m = middleend.basic.MiddleEnd(conf, [f])
+    b = backend.demo.BackEnd(conf, m)
+
+    b.start()
 
 
 if __name__ == "__main__":

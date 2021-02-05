@@ -1,7 +1,9 @@
 from copy import deepcopy as CP
 
 class MiddleEnd:
-    def __init__(self, frontends):
+    def __init__(self, conf, frontends):
+        self.conf = conf
+
         # If the user eats crayons and passes in a single frontend instead of a list,
         # that's fine. It's fine. We can clean up your mess for you. No problem.
         try:
