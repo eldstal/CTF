@@ -15,10 +15,13 @@ Receives specific updates from the Middle-end and renders it.
 # Protocols
 
 ## Back -> Middle
-Backend sends a message periodically (poll the server or whatever).
+Backend sends a snapshot message periodically (poll the server or whatever).
 
 A message is a tuple of `("message_type", { "data" : 1234 })` as specified below:
+Most fields may be omitted if unknown. Middle-end will treat this as "No change".
+The top-level list (`scores` and `challenges`) must be a complete listing.
 
+`team_id` and `challenge_id` are *mandatory* and decided by the backend. These must remain stable throughout the tournament. If the server doesn't provide something suitable, hash the team name or something.
 
 
 ```python
@@ -27,7 +30,7 @@ A message is a tuple of `("message_type", { "data" : 1234 })` as specified below
     {
         "scores": [
                      {
-                        "id": "team_id_1",
+                        "team_id": "team_id_1",
                         "name": "LuftensHjaltar",
                         "place": 69,
                         "score": 31337
@@ -45,17 +48,85 @@ A message is a tuple of `("message_type", { "data" : 1234 })` as specified below
     {
         "challenges" = [
                            {
-                               "id" : "chall_id_1",
-                               "solves": [ "team_id_1", ... ],
+                               "challenge_id" : "challenge_x",
+                               "solves": [ "team_1", ... ],
                                "name": "S4n1ty Ch3ck",
-                               "points": 25
-                            },
+                               "points": 25,
+                               "categories": [ "pwn", "re" ]
+                           },
                             ...
                        ]
     }
 )
 ```
 
+
+## Middle -> Front
+
+Middle-end sends individual events to the frontend when something changes.
+
+Omitted fields indicate that data is not available, so frontend should format accordingly (i.e. if no team has a "score" field, don't show a score column).
+
+```python
+(
+    "boot",
+    {
+        "scoreboard": [  same format as scoreboard snapshot  ]
+        "challenges": [  same format as challenges snapshot  ]
+    }
+)
+```
+
+```python
+(
+    "solve",
+    {
+        "team_id": "team_1",
+        "challenge_id": "challenge_x",
+        "first": True
+    }
+)
+```
+
+```python
+(
+    "place",
+    {
+        "team_id": "team_1",
+        "old_place": 69,
+        "place": 65
+    }
+)
+```
+
+```python
+(
+    "score",
+    {
+        "team_id": "team_1",
+        "old_score": 1335,
+        "score": 2001
+    }
+)
+```
+
+```python
+(
+    "new_challenge",
+    {
+        "challenge_id": "challenge_x",
+        "points": 500,
+        "categories": [ "pwn", "re" ]
+    }
+)
+
+```
+
+```python
+(
+    "new_team", { Same format as a team on the scoreboard }
+)
+```
 
 # TODO
 All the above.
