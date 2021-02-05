@@ -1,6 +1,5 @@
 # CTF
-CTF Terminal Formatting
-
+CTF Terminal Frontend
 
 ## Backend
 Fetches scoreboard and team stats and stuff from a CTF server. Tailor one to whatever score system the event is using.
