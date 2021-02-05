@@ -54,6 +54,57 @@ class MiddleEnd:
             if c["challenge_id"] == challenge_id: return c
         return None
 
+
+    def _compare_field(self, field, send_func, old_entry, new_entry, default_old=0):
+        if field not in new_entry:
+            return
+
+        old_value = default_old
+        if field in old_entry:
+            old_value = old_entry[field]
+            if new_entry[field] == old_value:
+                return
+
+        send_func(old_entry, new_entry, old_value)
+
+    def _send_team_score(self, old_entry, new_entry, old_value):
+        self._send_event(
+            ( "score", {
+                       "team_id": new_entry["team_id"],
+                       "old_score": old_value,
+                       "score": new_entry["score"]
+                       }
+            )
+        )
+
+    def _send_team_place(self, old_entry, new_entry, old_value):
+        self._send_event(
+            ( "place", {
+                       "team_id": new_entry["team_id"],
+                       "old_place": old_value,
+                       "place": new_entry["place"]
+                       }
+            )
+        )
+
+
+    def _send_challenge_solves(self, old_entry, new_entry, old_value):
+        is_first = False
+        for tid in new_entry["solves"]:
+            if tid in old_value: continue
+
+            is_first = (len(old_value) == 0) and not is_first
+
+            self._send_event(
+                ( "solve", {
+                           "team_id": tid,
+                           "challenge_id": new_entry["challenge_id"],
+                           "first": is_first
+                           }
+                )
+            )
+
+
     def _handle_scoreboard(self, in_data):
         # Diff against the old list and generate events
         for new_entry in in_data["scores"]:
@@ -62,28 +113,19 @@ class MiddleEnd:
             if old_entry is None:
                 self._send_event( ("new_team", new_entry) )
                 self.ctfstate["scoreboard"]["scores"].append(new_entry)
-            else:
-                if new_entry["score"] != old_entry["score"]:
-                    self._send_event(
-                        ( "score", {
-                                   "team_id": tid,
-                                   "old_score": old_entry["score"],
-                                   "score": new_entry["score"]
-                                   }
-                        )
-                    )
+                continue
 
-                if new_entry["place"] != old_entry["place"]:
-                    self._send_event(
-                        ( "place", {
-                                   "team_id": tid,
-                                   "old_place": old_entry["place"],
-                                   "place": new_entry["place"]
-                                   }
-                        )
-                    )
-                for k,v in new_entry.items():
-                    old_entry[k] = v
+            self._compare_field("score", self._send_team_score,
+                                         old_entry, new_entry,
+                                         0)
+
+            self._compare_field("place", self._send_team_place,
+                                         old_entry, new_entry,
+                                         1000)
+
+            # Copy all the new data into the scoreboard
+            for k,v in new_entry.items():
+                old_entry[k] = v
 
         # We've updated all the team entries, but they are still in the old order.
         self.ctfstate["scoreboard"]["scores"] = list(sorted(self.ctfstate["scoreboard"]["scores"], key=lambda x: x["place"]))
@@ -96,26 +138,13 @@ class MiddleEnd:
             if old_entry is None:
                 self._send_event( ("new_challenge", new_entry) )
                 self.ctfstate["challenges"]["challenges"].append(new_entry)
-            else:
-                if len(new_entry["solves"]) != len(old_entry["solves"]):
-                    for tid in new_entry["solves"]:
-                        if tid in old_entry["solves"]: continue
+                continue
 
-                        is_first = len(old_entry["solves"]) == 0
-
-                        self._send_event(
-                            ( "solve", {
-                                       "team_id": tid,
-                                       "challenge_id": cid,
-                                       "first": is_first
-                                       }
-                            )
-                        )
-
-                        old_entry["solves"].append(tid)
-
-                for k,v in new_entry.items():
-                    old_entry[k] = v
+            self._compare_field("solves", self._send_challenge_solves,
+                                         old_entry, new_entry,
+                                         [])
+            for k,v in new_entry.items():
+                old_entry[k] = v
 
         # Keep them sorted by challenge id, for simplicity
         self.ctfstate["challenges"]["challenges"] = list(sorted(self.ctfstate["challenges"]["challenges"], key=lambda x: x["challenge_id"]))

@@ -33,6 +33,13 @@ dummy_team_2 = {
     "score": 12
 }
 
+dummy_team_3 = {
+    "team_id": "T333",
+    "name": "Team Drei",
+    "place": 3,
+    "score": 190
+}
+
 class LogFrontEnd:
     def __init__(self, skip_boot=False):
         self.skip_boot = skip_boot
@@ -80,6 +87,60 @@ class TestMiddleEnd(unittest.TestCase):
 
         self.assertTrue("scoreboard" in data)
         self.assertEqual(data["scoreboard"], { "scores" : [ dummy_team_2, dummy_team_1 ] })
+
+
+    def test_firstblood(self):
+        front = LogFrontEnd(skip_boot = True)
+        mid = MiddleEnd(front)
+
+        # Set up a CTF base state
+        mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))
+        mid.handle_snapshot(CP(("scoreboard", { "scores" : [ dummy_team_2, dummy_team_1, dummy_team_3 ] })))
+        self.assertEqual(front.log, [])
+
+        # Two teams solved challenge 1
+        new_chall_1 = CP(dummy_chall_1)
+        new_chall_1["solves"].append(dummy_team_1["team_id"])
+        new_chall_1["solves"].append(dummy_team_2["team_id"])
+        mid.handle_snapshot(CP(("challenges", { "challenges" : [ new_chall_1 ] })))
+
+        # We expect two solves to come out of this.
+        # First, team 1 with a first:True
+        # Second, team 2 with first:False
+        self.assertEqual(len(front.log), 2)
+
+        msg,data = front.log[0]
+        self.assertEqual(msg, "solve")
+
+        self.assertEqual(data["challenge_id"], new_chall_1["challenge_id"])
+        self.assertEqual(data["team_id"], dummy_team_1["team_id"])
+        self.assertEqual(data["first"], True)
+
+        msg,data = front.log[1]
+        self.assertEqual(msg, "solve")
+
+        self.assertEqual(data["challenge_id"], new_chall_1["challenge_id"])
+        self.assertEqual(data["team_id"], dummy_team_2["team_id"])
+        self.assertEqual(data["first"], False)
+
+
+        # Straggler team 3 also don't get a first blood, obviously
+        # Two teams solved challenge 1
+        front.log = []
+        new_chall_1 = CP(new_chall_1)
+        new_chall_1["solves"].append(dummy_team_3["team_id"])
+        mid.handle_snapshot(CP(("challenges", { "challenges" : [ new_chall_1 ] })))
+
+        # We expect a solve notification, though
+        self.assertEqual(len(front.log), 1)
+
+        msg,data = front.log[0]
+        self.assertEqual(msg, "solve")
+
+        self.assertEqual(data["challenge_id"], new_chall_1["challenge_id"])
+        self.assertEqual(data["team_id"], dummy_team_3["team_id"])
+        self.assertEqual(data["first"], False)
+
 
 
     def test_challs(self):
@@ -162,4 +223,45 @@ class TestMiddleEnd(unittest.TestCase):
         self.assertEqual(data["team_id"], t_1["team_id"])
         self.assertEqual(data["old_place"], 2)
         self.assertEqual(data["place"], 3)
+
+    # The backend can omit data if it wants to.
+    def test_incomplete(self):
+        front = LogFrontEnd(skip_boot = True)
+        mid = MiddleEnd(front)
+
+        # Set up a CTF base state
+        mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))
+        mid.handle_snapshot(CP(("scoreboard", { "scores" : [ dummy_team_2, dummy_team_1 ] })))
+        self.assertEqual(front.log, [])
+
+        # For some weird reason, the backend loses the ability to check scores. It only gets the order of teams.
+        t_1 = CP(dummy_team_1)
+        t_2 = CP(dummy_team_2)
+
+        del(t_1["score"])
+        del(t_2["score"])
+
+        # The teams do change places, though
+        t_1["place"] = 1
+        t_2["place"] = 2
+
+        mid.handle_snapshot(CP(("scoreboard", { "scores" : [ t_1, t_2 ] })))
+
+        # We expect two events, one for each team's new place
+        front.sort_events()
+        self.assertEqual(len(front.log), 2)
+
+        # First event, should come from team_1 since it was the first reported
+        msg,data = front.log[0]
+        self.assertEqual(msg, "place")
+        self.assertEqual(data["team_id"], t_1["team_id"])
+        self.assertEqual(data["old_place"], 2)
+        self.assertEqual(data["place"], 1)
+
+        # Second event, team_2 also changed place
+        msg,data = front.log[1]
+        self.assertEqual(msg, "place")
+        self.assertEqual(data["team_id"], t_2["team_id"])
+        self.assertEqual(data["old_place"], 1)
+        self.assertEqual(data["place"], 2)
 
