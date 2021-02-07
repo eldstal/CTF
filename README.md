@@ -1,8 +1,34 @@
 # CTF
 CTF Terminal Frontend
 
+```
+usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends] [--backend BACKEND] [--list-backends] [--focus-team [FOCUS_TEAM [FOCUS_TEAM ...]]] [--poll-interval POLL_INTERVAL] [--config CONFIG] [--url URL] [--auth AUTH]
+
+Fetch and display a live CTF scoreboard
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --frontend [FRONTEND [FRONTEND ...]], -f [FRONTEND [FRONTEND ...]]
+                        Add a frontend
+  --list-frontends, -F  List known frontends
+  --backend BACKEND, -b BACKEND
+                        Specify a CTF backend
+  --list-backends, -B   List known frontends
+  --focus-team [FOCUS_TEAM [FOCUS_TEAM ...]], -t [FOCUS_TEAM [FOCUS_TEAM ...]]
+                        One or more team names (regex) to always show
+  --poll-interval POLL_INTERVAL, -i POLL_INTERVAL
+                        Seconds between server polling. Don't set this too low!
+  --config CONFIG, -c CONFIG
+                        Load a configuration file.
+  --url URL, -u URL     URL to scoreboard. See backend list for specifics.
+  --auth AUTH, -a AUTH  Auth token for scoreboard. See backend list for specifics.
+
+```
+
 ## Backend
 Fetches scoreboard and team stats and stuff from a CTF server. Tailor one to whatever score system the event is using.
+
+Optionally implements autodetection ("Does this URL point to a CTF system I can handle?").
 
 ## Middle-end
 Keeps a running copy of the CTF state and identifies changes. Sends events to the front-end when something interesting changes.
@@ -130,21 +156,17 @@ Omitted fields indicate that data is not available, so frontend should format ac
 ```
 
 # TODO
-All the above.
 
 ## Backends
 - CTFd
-- rCTF
 - ...
 
-Auto-detection would be cool, so the user can provide a URL and a proper backend is selected automatically. This should be possible with some well-chosen fingerprints.
+A global (persistent) cookie jar to keep from having to authenticate new sessions on every restart
 
 ## Frontend
-A simple print-a-table thing to begin with
+A simple print-a-table thing to begin with, this is already implemented as `--frontend basic`
 
 After that, the [sky](https://blessed.readthedocs.io/en/latest/) is the limit!
 
 Support is in place for multiple frontends active at the same time, so maybe one for sound, one for video, one for external lighting effects, etc.
 
-## Nepotism
-Support for "special" teams to always keep visible. My team is blue, the bad guys are gray. Boo, those guys!
