@@ -59,12 +59,15 @@ class LogFrontEnd:
 
 class TestMiddleEnd(unittest.TestCase):
 
+    def conf(self):
+        return {}
+
     # The very first scoreboard data from the backend
     # should trigger a "boot" message with all known info
     # to bootstrap the frontend and have an actual info display.
     def test_boot(self):
         front = LogFrontEnd()
-        mid = MiddleEnd(self.conf, front)
+        mid = MiddleEnd(self.conf(), front)
 
         self.assertEqual(front.log, [])
 
@@ -91,7 +94,7 @@ class TestMiddleEnd(unittest.TestCase):
 
     def test_firstblood(self):
         front = LogFrontEnd(skip_boot = True)
-        mid = MiddleEnd(self.conf, front)
+        mid = MiddleEnd(self.conf(), front)
 
         # Set up a CTF base state
         mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))
@@ -145,7 +148,7 @@ class TestMiddleEnd(unittest.TestCase):
 
     def test_challs(self):
         front = LogFrontEnd(skip_boot = True)
-        mid = MiddleEnd(self.conf, front)
+        mid = MiddleEnd(self.conf(), front)
 
         # Set up a CTF base state
         mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))
@@ -187,7 +190,7 @@ class TestMiddleEnd(unittest.TestCase):
 
     def test_teams(self):
         front = LogFrontEnd(skip_boot = True)
-        mid = MiddleEnd(self.conf, front)
+        mid = MiddleEnd(self.conf(), front)
 
         # Set up a CTF base state
         mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))
@@ -227,7 +230,7 @@ class TestMiddleEnd(unittest.TestCase):
     # The backend can omit data if it wants to.
     def test_incomplete(self):
         front = LogFrontEnd(skip_boot = True)
-        mid = MiddleEnd(self.conf, front)
+        mid = MiddleEnd(self.conf(), front)
 
         # Set up a CTF base state
         mid.handle_snapshot(CP(("challenges", { "challenges" : [ dummy_chall_1 ] })))

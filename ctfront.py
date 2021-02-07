@@ -49,6 +49,9 @@ def load_config():
     parser.add_argument("--list-backends", "-B", action="store_true",
                         help="List known frontends")
 
+    parser.add_argument("--focus-team", "-t", type=str, nargs="*",
+                        help="One or more team names (regex) to always show")
+
     parser.add_argument("--poll-interval", "-i", type=int,
                         help="Seconds between server polling. Don't set this too low!")
 
@@ -96,6 +99,7 @@ def load_config():
     override(conf, "url", args.url, "")
     override(conf, "auth", args.auth, "")
     override(conf, "poll-interval", args.poll_interval, 60)
+    override(conf, "focus-team", args.focus_team, [])
 
 
     return conf
