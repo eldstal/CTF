@@ -49,9 +49,6 @@ def load_config():
     parser.add_argument("--list-backends", "-B", action="store_true",
                         help="List known frontends")
 
-    parser.add_argument("--focus-team", "-t", type=str, nargs="*",
-                        help="One or more team names (regex) to always show")
-
     parser.add_argument("--poll-interval", "-i", type=int,
                         help="Seconds between server polling. Don't set this too low!")
 
@@ -63,6 +60,13 @@ def load_config():
 
     parser.add_argument("--auth", "-a", type=str, default=None,
                         help="Auth token for scoreboard. See backend list for specifics.")
+
+    # These are the myriad drawing options, etc.
+    parser.add_argument("--focus-teams", "-t", type=str, nargs="*",
+                        help="One or more team names (regex) to always show")
+
+    parser.add_argument("--max-length", type=int,
+                        help="Max length of shown scoreboard")
 
 
     args = parser.parse_args()
@@ -93,14 +97,26 @@ def load_config():
             if conf_key not in conf:
                 conf[conf_key] = default
 
+    def force_list(conf, conf_key):
+        if conf_key in conf:
+            if type(conf_key) == list:
+                return
+            conf[conf_key] = [ conf[conf_key] ]
+
     # Override the loaded config with command line options
     override(conf, "frontend", args.frontend, [])
     override(conf, "backend", args.backend, "auto")
+
+    # Backend options
     override(conf, "url", args.url, "")
     override(conf, "auth", args.auth, "")
     override(conf, "poll-interval", args.poll_interval, 60)
-    override(conf, "focus-team", args.focus_team, [])
 
+    # Frontend options
+    override(conf, "focus-teams", args.focus_teams, [])
+    override(conf, "max-length", args.max_length, 20)
+
+    force_list(conf, "focus-teams")
 
     return conf
 

@@ -9,7 +9,7 @@ class FrontEnd:
     @staticmethod
     def help():
         return [
-                 "focus-team: one or more teams (name) to always show"
+                 "focus-teams: one or more teams (name) to always show"
                ]
 
     def __init__(self, conf):
@@ -75,16 +75,24 @@ class FrontEnd:
                 team["score"]
             ])
 
-        # Only show top 20
-        boundary = 20
+        # Only show top 20 if the user didn't specify further
+        boundary = self.conf["max-length"]
         cropped = table[:boundary]
 
         # Additionally, if any of the focused teams fall outside that list,
         # add them to the bottom
+        focused = []
         for t in table[boundary:]:
-            if any([ re.match(expr, t[2]) for expr in self.conf["focus-team"] ]):
-                cropped.append(t)
+            for expr in self.conf["focus-teams"]:
+                if re.match(expr, t[2]) != None:
+                    print(f"Focused {t[2]} due to {expr}")
+                    focused.append(t)
+                    break
+
+        if len(cropped) + len(focused) > boundary:
+            cropped = cropped[:boundary - len(focused)]
+
 
         # Clear screen
         print("\033[2J")
-        print(tabulate(cropped))
+        print(tabulate(cropped + focused))

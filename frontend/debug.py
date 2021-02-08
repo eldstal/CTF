@@ -9,7 +9,10 @@ class FrontEnd:
 
     def __init__(self, conf):
         self.conf = conf
-        pass
+
+        print("Configuration: ")
+        for k,v in self.conf.items():
+            print(f"  {k}: {v}")
 
     def start(self):
         pass
