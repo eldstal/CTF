@@ -1,5 +1,6 @@
 import random
 import time
+import threading
 
 from copy import deepcopy as CP
 
@@ -23,6 +24,8 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+
+        self.running = False
 
 
         self.team_names = [ "LuftensHjaltar", "ElectroH3xe", "Pappas Pojkar", "SpionFromage",  "L33tF33t",
@@ -63,20 +66,24 @@ class BackEnd:
                         self._event_solve
                       ]
 
-    def start(self):
-        # The bootup data
-        self._send_snapshot()
-
-        while True:
-            time.sleep(self.conf["poll-interval"])
-            self._random_event()
-            self._send_snapshot()
+    def run(self):
+        self.running = True
+        self._main()
 
     def stop(self):
-        pass
+        self.running = False
 
     def update(self):
         pass
+
+    def _main(self):
+        # The bootup data
+        self._send_snapshot()
+
+        while self.running:
+            time.sleep(self.conf["poll-interval"])
+            self._random_event()
+            self._send_snapshot()
 
     def _event_new_team(self):
         self._add_new_team()

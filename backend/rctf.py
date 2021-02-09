@@ -50,8 +50,9 @@ class BackEnd:
 
 
 
-    def start(self):
-        while True:
+    def run(self):
+        self.running = True
+        while self.running:
             scoreboard = self._get_scoreboard()
             if scoreboard is not None:
                 self.middle.handle_snapshot(("scoreboard", { "scores": scoreboard }))
@@ -64,7 +65,7 @@ class BackEnd:
             time.sleep(self.conf["poll-interval"])
 
     def stop(self):
-        pass
+        self.running = False
 
     def update(self):
         pass

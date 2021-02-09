@@ -3,6 +3,7 @@
 import argparse
 import os
 import json
+import threading
 
 
 from frontend import FRONTENDS
@@ -99,7 +100,7 @@ def load_config():
 
     def force_list(conf, conf_key):
         if conf_key in conf:
-            if type(conf_key) == list:
+            if type(conf[conf_key]) == list:
                 return
             conf[conf_key] = [ conf[conf_key] ]
 
@@ -120,6 +121,13 @@ def load_config():
 
     return conf
 
+def boot_thread(func):
+    t = threading.Thread(target=func)
+    t.daemon = True
+    t.start()
+    return t
+
+
 def main():
 
     conf = load_config()
@@ -139,13 +147,36 @@ def main():
     if back is None:
         return 1
 
+    threaded_frontends = []
+    modal_frontends = []
     for f in front:
-        f.start()
+        if f.needs_main_thread():
+            modal_frontends.append(f)
+        else:
+            threaded_frontends.append(f)
 
+    if len(modal_frontends) > 1:
+        print("Multiple incompatible frontends configured.")
+        return 1
+
+    # Parallel frontends run in their own threads
+    frontend_threads = []
+    for f in threaded_frontends:
+        frontend_threads.append(boot_thread(f.run))
+
+    # Backend also runs in its own thread
     middle.start()
+    backend_thread = boot_thread(back.run)
 
-    back.start()
+    # This is a special child, which cannot tolerate being anywhere except
+    # the main main main thread. Fine.
+    for f in modal_frontends:
+        f.run()
 
+    for t in frontend_threads:
+        t.join()
+
+    backend_thread.join()
 
 if __name__ == "__main__":
     main()
