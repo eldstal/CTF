@@ -3,14 +3,16 @@ import sys
 import string
 import re
 import time
-from strip_ansi import strip_ansi
+import ftfy
+import unicodedata
 
 # A frontend which just clears the terminal and prints the scoreboard
 class FrontEnd:
     @staticmethod
     def help():
         return [
-                 "focus-teams: one or more teams (name) to always show"
+                 "focus-teams: one or more teams (name) to always show",
+                 "max-count:   max length of scoreboard"
                ]
 
     @staticmethod
@@ -58,7 +60,12 @@ class FrontEnd:
         self._redraw()
 
     def _sanitize(self, text):
-        return strip_ansi(text)
+        cleaned = ftfy.fix_text(text, normalization="NFKC")
+
+        # Remove all that line-crossing garbage in the Marks characters
+        cleaned = u"".join( x for x in cleaned if not unicodedata.category(x).startswith("M") )
+
+        return cleaned
 
     def _redraw(self):
         ranking = [ (tid, t["place"]) for tid,t in self.teams.items() ]

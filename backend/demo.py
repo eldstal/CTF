@@ -55,13 +55,13 @@ class BackEnd:
         self.challenges = {}
 
         # Everyone is ready and signed up
-        for t in range(2):
+        for t in range(5):
             self._add_new_team()
 
-        for c in range(3):
+        for c in range(10):
             self._add_new_challenge()
 
-        self.events = [ self._event_new_team,
+        self.events = [ #self._event_new_team,
                         self._event_new_challenge,
                         self._event_solve
                       ]
