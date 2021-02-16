@@ -142,7 +142,9 @@ Omitted fields indicate that data is not available, so frontend should format ac
     "new_challenge",
     {
         "challenge_id": "challenge_x",
+        "name": "Grognar's Revenge",
         "points": 500,
+        "solves": [ "team_id_a", "team_id_b" ],
         "categories": [ "pwn", "re" ]
     }
 )

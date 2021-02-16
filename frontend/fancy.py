@@ -5,10 +5,18 @@ import time
 import threading
 import queue
 import multiprocessing
+import queue
+import select
 import ftfy
 import unicodedata
 
 from asciimatics.screen import Screen
+from asciimatics.scene import Scene
+from asciimatics.effects import Cycle, Mirage, RandomNoise
+from asciimatics.renderers import FigletText
+
+from frontend.animation.wipe import *
+from frontend.animation.util import *
 
 # A frontend which uses asciimatics to draw with super fancy animations
 class FrontEnd:
@@ -25,17 +33,18 @@ class FrontEnd:
 
     def __init__(self, conf):
         self.conf = conf
+
+        # Everything we know about the players
+        # This includes not only data from the middle-end, but
+        # some of our own data as well.
         self.teams = {}
 
+        # Likewise, everything we know about the challenges
+        self.challenges = {}
+
         # Incoming events from the middle-end
-        self.events = multiprocessing.Queue()
-
-        # Self-posted actions, like updating the screen when there's been no event, etc.
-        # This also contains animations that are queued up.
-        self.actions = multiprocessing.Queue()
-
-        # Internal queue of animations to show
-        self.animations = multiprocessing.Queue()
+        # Also contains self-posted actions, like "redraw"
+        self.events = queue.Queue()
 
 
         pass
@@ -69,35 +78,33 @@ class FrontEnd:
             "awards":  { "colour": self.color["award"], "bg": self.color["bg"] },
         }
 
+
+    def _poll_events(self):
+        try:
+            return self.events.get(timeout=1)
+        except queue.Empty:
+            return None
+
     def _main(self, screen):
         self.screen = screen
         self._palette(screen)
+        self._redraw()
         while self.running:
-            # _reader is an undocumented hack.
-            # This appears to be the way to select() on queues.
-            # TODO: Fix the portability of this by implementing it properly.
-            pending = multiprocessing.connection.wait([self.events._reader, self.actions._reader])
+            # This should be two different queues, but there's no select() implementation.
+            # Oh, well
+            ev = self._poll_events()
 
             if screen.has_resized():
+                # Ehm... pretend we never took it.
+                self.events.put(ev)
                 break
 
-            for p in pending:
-                # Events from middle-end, i.e. data updates
-                if p == self.events._reader:
-                    while not self.events.empty():
-                        e = self.events.get()
-                        self._parse_event(e)
-                    # Every event from the middle-end warrants a redraw, probably.
-                    self._schedule_redraw()
+            if ev is not None:
+                self._parse_event(ev)
 
-                # Do... something. Show an animation, probably.
-                elif p == self.actions._reader:
-                    while not self.actions.empty():
-                        a = self.actions.get()
-                        self._parse_action(a)
 
     def _schedule_redraw(self):
-        self.actions.put(("redraw", None))
+        self.events.put(("redraw", None))
 
     def _parse_action(self, a):
         msg, data = a
@@ -108,42 +115,67 @@ class FrontEnd:
             self.running = False
             self.actions.put(("dummy", None))
 
+        else:
+            return False
+
+        # We handled this event, so it must have been an internal event
+        return True
+
     def _parse_event(self, event):
         msg,data = event
 
-        if msg == "boot":
+        if self._parse_action(event):
+            # It was an internal action
+            return
+
+        elif msg == "boot":
             for t in data["scoreboard"]["scores"]:
                 tid = t["team_id"]
                 self.teams[tid] = t
                 self._team_add_stats(self.teams[tid])
+            if "challenges" in data:
+                for c in data["challenges"]["challenges"]:
+                    cid = c["challenge_id"]
+                    self.challenges[cid] = c
 
-        if msg == "new_team":
+        elif msg == "new_team":
             tid = data["team_id"]
             self.teams[tid] = data
             self.teams[tid]["old_place"] = data["place"]
             self.teams[tid]["marker"] = ""
             self._team_add_stats(self.teams[tid])
 
-        if msg == "place":
+        elif msg == "place":
             tid = data["team_id"]
             if tid in self.teams:
                 self.teams[tid]["place"] = data["place"]
                 self.teams[tid]["old_place"] = data["old_place"]
                 self._team_add_stats(self.teams[tid])
 
-        if msg == "score":
+        elif msg == "score":
             tid = data["team_id"]
             if tid in self.teams:
                 self.teams[tid]["score"] = data["score"]
                 self._team_add_stats(self.teams[tid])
 
-        if msg == "solve":
+        elif msg == "solve":
             cid = data["challenge_id"]
             tid = data["team_id"]
-            #self.challenges[cid]["solves"].append(tid)
+            self.challenges[cid]["solves"].append(tid)
             if data["first"]:
                 self.teams[tid]["firsts"].append(cid)
                 self._team_add_stats(self.teams[tid])
+                self._animate_firstblood(self.challenges[cid], self.teams[tid])
+
+        elif msg == "new_challenge":
+            cid = data["challenge_id"]
+            self.challenges[cid] = data
+
+        else:
+            # It was an unknown message from the middle-end. Nevermind
+            return
+
+        self._schedule_redraw()
 
     # Add/calculate additional fields for our internal use
     def _team_add_stats(self, team):
@@ -199,6 +231,12 @@ class FrontEnd:
             if re.match(expr, team["name"]) != None: return True
         return False
 
+    def _attr_by_team(self, team):
+        if self._team_is_focused(team):
+            return self.attr["focused"]
+        else:
+            return self.attr["default"]
+
     # Return a list of strings, aligned properly
     # Will also color the focused team(s)
     def _print_table(self, screen):
@@ -228,12 +266,10 @@ class FrontEnd:
 
                 text = self._sanitize(str(team[field]))
 
+                # Some fields are colored differently
                 attr = self.attr["default"]
-                if field == "name" and self._team_is_focused(team):
-                    attr = self.attr["focused"]
-                    text = text
-
-                if field == "awards": attr = self.attr["awards"]
+                if field == "name": attr = self._attr_by_team(team)
+                elif field == "awards": attr = self.attr["awards"]
 
                 table[i+1][c] = (text, attr)
 
@@ -250,11 +286,20 @@ class FrontEnd:
         x0 = (w - col_offset(len(columns))) // 2
         y0 = (h - len(table)) // 2
 
+        # Super big tables don't fall outside the window
+        x0 = max(0, x0)
+        y0 = max(0, y0)
+
         for r in range(len(table)):
             for c in range(len(columns)):
                 text,attr = table[r][c]
                 x = x0 + col_offset(c)
                 y = y0 + r
+
+                # Don't overflow the window
+                if y > h: break
+                text = text[:w-x]
+
                 screen.print_at(text, x, y, transparent=True, **attr)
 
 
@@ -268,4 +313,28 @@ class FrontEnd:
 
         self.screen.refresh()
 
+    # Generate a scene with a snapshot of the screen overwritten by some list of transition effects
+    def _trans(self, effects):
+        if type(effects) != list:
+            effects = [ effects ]
+
+        # Make a snapshot of the screen state, so that the wipes don't start from a clear screen
+        snap = ScreenShot(self.screen)
+        return Scene( [snap] + effects, clear=False)
+
+    def _animate(self, scenes):
+        if type(scenes) != list:
+            effects = [ effects ]
+
+        self.screen.play(scenes, repeat=False, stop_on_resize=True)
+
+        self._redraw()
+
+    # Animations for events!
+    def _animate_firstblood(self, chall, team):
+        attr = self._attr_by_team(team)
+        self._animate([
+                   self._trans(NoiseWipe(self.screen, 30)),
+                   Scene([Mirage(self.screen, FigletText("FIRST BLOOD"), y=4, colour=attr["colour"])], duration=40)
+                 ])
 
