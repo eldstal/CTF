@@ -25,6 +25,7 @@ optional arguments:
                         One or more team names (regex) to always show
   --max-length MAX_LENGTH
                         Max length of shown scoreboard
+
 ```
 
 ## Backend
@@ -161,6 +162,7 @@ Omitted fields indicate that data is not available, so frontend should format ac
         "name": "Grognar's Revenge",
         "points": 500,
         "solves": [ "team_id_a", "team_id_b" ],
+
         "categories": [ "pwn", "re" ]
     }
 )

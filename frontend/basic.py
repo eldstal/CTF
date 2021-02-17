@@ -2,9 +2,11 @@ from tabulate import tabulate
 import sys
 import string
 import re
+
 import time
 import ftfy
 import unicodedata
+
 
 # A frontend which just clears the terminal and prints the scoreboard
 class FrontEnd:
@@ -30,6 +32,7 @@ class FrontEnd:
         self.running = True
         while self.running:
             time.sleep(1)
+
 
     # An event from the middle-end about something that changed
     def handle_event(self, event):
@@ -67,6 +70,7 @@ class FrontEnd:
 
         return cleaned
 
+
     def _redraw(self):
         ranking = [ (tid, t["place"]) for tid,t in self.teams.items() ]
         ranking = sorted(ranking, key=lambda x: x[1])
@@ -86,12 +90,15 @@ class FrontEnd:
                 team["score"]
             ])
 
+
         # Only show top 20 if the user didn't specify further
         boundary = self.conf["max-length"]
+
         cropped = table[:boundary]
 
         # Additionally, if any of the focused teams fall outside that list,
         # add them to the bottom
+
         focused = []
         for t in table[boundary:]:
             for expr in self.conf["focus-teams"]:

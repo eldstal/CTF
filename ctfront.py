@@ -6,6 +6,7 @@ import json
 import threading
 
 
+
 from frontend import FRONTENDS
 import middleend.basic
 from backend import BACKENDS
@@ -97,7 +98,7 @@ def load_config():
         if default is not None:
             if conf_key not in conf:
                 conf[conf_key] = default
-
+                
     def force_list(conf, conf_key):
         if conf_key in conf:
             if type(conf[conf_key]) == list:
@@ -126,6 +127,7 @@ def boot_thread(func):
     t.daemon = True
     t.start()
     return t
+
 
 
 def main():
@@ -177,6 +179,7 @@ def main():
         t.join()
 
     backend_thread.join()
+
 
 if __name__ == "__main__":
     main()

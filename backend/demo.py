@@ -2,6 +2,7 @@ import random
 import time
 import threading
 
+
 from copy import deepcopy as CP
 
 # A backend which generates nonsense data for a sort of attractor mode
@@ -26,7 +27,6 @@ class BackEnd:
         self.middle = middleend
 
         self.running = False
-
 
         self.team_names = [ "LuftensHjaltar", "ElectroH3xe", "Pappas Pojkar", "SpionFromage",  "L33tF33t",
                             "Ned Spandex",    "True Pink",   "x3",            "haxKLOWN",      "Sventon",
@@ -55,6 +55,7 @@ class BackEnd:
         self.challenges = {}
 
         # Everyone is ready and signed up
+
         for t in range(10):
             self._add_new_team()
 

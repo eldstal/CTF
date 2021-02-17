@@ -1,6 +1,7 @@
 import queue
 import time
 
+
 # A frontend which only prints its events, nothing more
 class FrontEnd:
     @staticmethod
