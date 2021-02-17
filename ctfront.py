@@ -105,7 +105,7 @@ def load_config():
             conf[conf_key] = [ conf[conf_key] ]
 
     # Override the loaded config with command line options
-    override(conf, "frontend", args.frontend, [])
+    override(conf, "frontend", args.frontend, ["fancy"])
     override(conf, "backend", args.backend, "auto")
 
     # Backend options
