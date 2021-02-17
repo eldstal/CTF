@@ -1,6 +1,27 @@
 from asciimatics.effects import Effect
 from asciimatics.screen import Screen
 
+RAINBOW_256 = [ 160, 196, 202, 208, 214, 220, 226,
+                192, 191, 190,120, 119, 118, 82, 46,
+                49, 51, 45, 39, 33, 27, 21, 19, 55,
+                56, 57, 128, 129, 165, 52, 88 ]
+RAINBOW_8 = [
+                Screen.COLOUR_RED,
+                Screen.COLOUR_YELLOW,
+                Screen.COLOUR_GREEN,
+                Screen.COLOUR_CYAN,
+                Screen.COLOUR_BLUE,
+                Screen.COLOUR_MAGENTA,
+            ]
+
+# The cool characters from codepage 437
+NOISE_DOS = (
+             u"┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌" +
+             u"αßΓπΣσµτΦΘΩδ∞φε" +
+             u"☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼" +
+             u"∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■"
+            )
+
 
 class ScreenShot(Effect):
     """

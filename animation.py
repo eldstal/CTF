@@ -13,6 +13,7 @@ from tabulate import tabulate
 
 from frontend.animation.wipe import *
 from frontend.animation.util import *
+from frontend.animation.display import *
 
 
 # Draw some dummy text for a transition to wipe
@@ -42,10 +43,15 @@ def draw_background(screen):
 
 def draw_func(screen):
 
+    team = { "team_id": "rhj", "name": "RymdensHjalmar", "score": "50", "place": 4 }
+    chall = { "challenge_id": "bbyrop", "name": "babyROP", "points": "500" }
+
     effect_chains = [
                 #[RainbowWipe(screen, 15)],
-                [NoiseWipe(screen, 40)],
+                #[ NoiseWipe(screen, 40) ],
+                [ FirstBloodDisplay(screen, team, chall, duration=60) ]
               ]
+
 
     while not screen.has_resized():
         for e in effect_chains:

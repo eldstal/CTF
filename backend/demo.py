@@ -55,16 +55,16 @@ class BackEnd:
         self.challenges = {}
 
         # Everyone is ready and signed up
-        for t in range(5):
+        for t in range(10):
             self._add_new_team()
 
         for c in range(10):
             self._add_new_challenge()
 
-        self.events = [ #self._event_new_team,
-                        self._event_new_challenge,
-                        self._event_solve
-                      ]
+        # The duplicates help weight the randomizer
+        self.events = ([ self._event_new_team ] * 3 +
+                       [ self._event_new_challenge ] +
+                       [ self._event_solve ] * 10)
 
     def run(self):
         self.running = True

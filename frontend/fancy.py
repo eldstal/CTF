@@ -14,9 +14,11 @@ from asciimatics.screen import Screen
 from asciimatics.scene import Scene
 from asciimatics.effects import Cycle, Mirage, RandomNoise
 from asciimatics.renderers import FigletText
+from asciimatics.exceptions import ResizeScreenError
 
 from frontend.animation.wipe import *
 from frontend.animation.util import *
+from frontend.animation.display import *
 
 # A frontend which uses asciimatics to draw with super fancy animations
 class FrontEnd:
@@ -55,7 +57,10 @@ class FrontEnd:
         # If the terminal size changes, wrapper() will terminate and
         # we need to create a new Screen to keep executing
         while self.running:
-            Screen.wrapper(self._main)
+            try:
+                Screen.wrapper(self._main)
+            except ResizeScreenError:
+                pass
 
     # An event from the middle-end about something that changed
     def handle_event(self, event):
@@ -69,6 +74,7 @@ class FrontEnd:
             "focus": 213,   # Pink
             "accent": 255,  # White
             "award": 220,  # GOLD
+            "firstblood": 196,  # GOLD
         }
 
         # Double-splat these into Screen.print_at()
@@ -131,6 +137,7 @@ class FrontEnd:
         elif msg == "boot":
             for t in data["scoreboard"]["scores"]:
                 tid = t["team_id"]
+                t["name"] = self._sanitize(t["name"])
                 self.teams[tid] = t
                 self._team_add_stats(self.teams[tid])
             if "challenges" in data:
@@ -140,6 +147,7 @@ class FrontEnd:
 
         elif msg == "new_team":
             tid = data["team_id"]
+            data["name"] = self._sanitize(data["name"])
             self.teams[tid] = data
             self.teams[tid]["old_place"] = data["place"]
             self.teams[tid]["marker"] = ""
@@ -212,7 +220,7 @@ class FrontEnd:
         ranking = [ (team["place"], team) for tid,team in self.teams.items() ]
         ranking = sorted(ranking, key=lambda x: x[0])
 
-        boundary = self.conf["max-length"]
+        boundary = self.conf["max-count"]
         toplist = ranking[:boundary]
 
         focused = []
@@ -335,6 +343,6 @@ class FrontEnd:
         attr = self._attr_by_team(team)
         self._animate([
                    self._trans(NoiseWipe(self.screen, 30)),
-                   Scene([Mirage(self.screen, FigletText("FIRST BLOOD"), y=4, colour=attr["colour"])], duration=40)
+                   Scene([FirstBloodDisplay(self.screen, team, chall, color=self.color["firstblood"], team_color=attr["colour"])])
                  ])
 
