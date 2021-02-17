@@ -2,7 +2,8 @@
 CTF Terminal Frontend
 
 ```
-usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends] [--backend BACKEND] [--list-backends] [--focus-team [FOCUS_TEAM [FOCUS_TEAM ...]]] [--poll-interval POLL_INTERVAL] [--config CONFIG] [--url URL] [--auth AUTH]
+usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends] [--backend BACKEND] [--list-backends] [--poll-interval POLL_INTERVAL] [--config CONFIG] [--url URL] [--auth AUTH] [--focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]]]
+                  [--max-length MAX_LENGTH]
 
 Fetch and display a live CTF scoreboard
 
@@ -14,14 +15,16 @@ optional arguments:
   --backend BACKEND, -b BACKEND
                         Specify a CTF backend
   --list-backends, -B   List known frontends
-  --focus-team [FOCUS_TEAM [FOCUS_TEAM ...]], -t [FOCUS_TEAM [FOCUS_TEAM ...]]
-                        One or more team names (regex) to always show
   --poll-interval POLL_INTERVAL, -i POLL_INTERVAL
                         Seconds between server polling. Don't set this too low!
   --config CONFIG, -c CONFIG
                         Load a configuration file.
   --url URL, -u URL     URL to scoreboard. See backend list for specifics.
   --auth AUTH, -a AUTH  Auth token for scoreboard. See backend list for specifics.
+  --focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]], -t [FOCUS_TEAMS [FOCUS_TEAMS ...]]
+                        One or more team names (regex) to always show
+  --max-length MAX_LENGTH
+                        Max length of shown scoreboard
 
 ```
 
@@ -38,6 +41,20 @@ Receives specific updates from the Middle-end and renders it.
 
 Obviously, the front-end is free to ignore events as needed. You could make a front-end which only flashes your keyboard LEDs when `p4` scores points!
 
+## Configuration
+Reads `~/.ctfront/config.json` which may look like this (everything in there is optional)
+
+```json
+{
+   "focus-teams": [ ".uftens.jaltar", "SmygHalloumi" ],
+   "max-count": 10,
+   "poll-interval": 60,
+   "url": "https://ctf.dicega.ng/scores",
+   "backend": "auto",
+   "frontends": [ "fancy" ]
+}
+
+```
 
 # Protocols
 
@@ -142,7 +159,10 @@ Omitted fields indicate that data is not available, so frontend should format ac
     "new_challenge",
     {
         "challenge_id": "challenge_x",
+        "name": "Grognar's Revenge",
         "points": 500,
+        "solves": [ "team_id_a", "team_id_b" ],
+
         "categories": [ "pwn", "re" ]
     }
 )

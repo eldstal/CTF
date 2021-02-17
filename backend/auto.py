@@ -8,6 +8,10 @@ def SelectBackend(conf, middle):
 
     from backend import BACKENDS
 
+    if len(conf["url"]) < 1:
+        print(f"Backend autodetection requires a URL. Try --url or specify a backend using --backend")
+        return None
+
     for name,implementation in BACKENDS.items():
         # Can only work with classes. There's a function pointer to auto in there.
         if type(implementation) != type:

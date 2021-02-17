@@ -3,6 +3,8 @@
 import argparse
 import os
 import json
+import threading
+
 
 
 from frontend import FRONTENDS
@@ -49,9 +51,6 @@ def load_config():
     parser.add_argument("--list-backends", "-B", action="store_true",
                         help="List known frontends")
 
-    parser.add_argument("--focus-team", "-t", type=str, nargs="*",
-                        help="One or more team names (regex) to always show")
-
     parser.add_argument("--poll-interval", "-i", type=int,
                         help="Seconds between server polling. Don't set this too low!")
 
@@ -63,6 +62,13 @@ def load_config():
 
     parser.add_argument("--auth", "-a", type=str, default=None,
                         help="Auth token for scoreboard. See backend list for specifics.")
+
+    # These are the myriad drawing options, etc.
+    parser.add_argument("--focus-teams", "-t", type=str, nargs="*",
+                        help="One or more team names (regex) to always show")
+
+    parser.add_argument("--max-length", type=int,
+                        help="Max length of shown scoreboard")
 
 
     args = parser.parse_args()
@@ -92,17 +98,37 @@ def load_config():
         if default is not None:
             if conf_key not in conf:
                 conf[conf_key] = default
+                
+    def force_list(conf, conf_key):
+        if conf_key in conf:
+            if type(conf[conf_key]) == list:
+                return
+            conf[conf_key] = [ conf[conf_key] ]
 
     # Override the loaded config with command line options
-    override(conf, "frontend", args.frontend, [])
+    override(conf, "frontend", args.frontend, ["fancy"])
     override(conf, "backend", args.backend, "auto")
+
+    # Backend options
     override(conf, "url", args.url, "")
     override(conf, "auth", args.auth, "")
     override(conf, "poll-interval", args.poll_interval, 60)
-    override(conf, "focus-team", args.focus_team, [])
 
+    # Frontend options
+    override(conf, "focus-teams", args.focus_teams, [])
+    override(conf, "max-length", args.max_length, 20)
+
+    force_list(conf, "focus-teams")
 
     return conf
+
+def boot_thread(func):
+    t = threading.Thread(target=func)
+    t.daemon = True
+    t.start()
+    return t
+
+
 
 def main():
 
@@ -123,12 +149,36 @@ def main():
     if back is None:
         return 1
 
+    threaded_frontends = []
+    modal_frontends = []
     for f in front:
-        f.start()
+        if f.needs_main_thread():
+            modal_frontends.append(f)
+        else:
+            threaded_frontends.append(f)
 
+    if len(modal_frontends) > 1:
+        print("Multiple incompatible frontends configured.")
+        return 1
+
+    # Parallel frontends run in their own threads
+    frontend_threads = []
+    for f in threaded_frontends:
+        frontend_threads.append(boot_thread(f.run))
+
+    # Backend also runs in its own thread
     middle.start()
+    backend_thread = boot_thread(back.run)
 
-    back.start()
+    # This is a special child, which cannot tolerate being anywhere except
+    # the main main main thread. Fine.
+    for f in modal_frontends:
+        f.run()
+
+    for t in frontend_threads:
+        t.join()
+
+    backend_thread.join()
 
 
 if __name__ == "__main__":

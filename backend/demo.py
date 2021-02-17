@@ -1,5 +1,7 @@
 import random
 import time
+import threading
+
 
 from copy import deepcopy as CP
 
@@ -24,6 +26,7 @@ class BackEnd:
         self.conf = conf
         self.middle = middleend
 
+        self.running = False
 
         self.team_names = [ "LuftensHjaltar", "ElectroH3xe", "Pappas Pojkar", "SpionFromage",  "L33tF33t",
                             "Ned Spandex",    "True Pink",   "x3",            "haxKLOWN",      "Sventon",
@@ -52,31 +55,36 @@ class BackEnd:
         self.challenges = {}
 
         # Everyone is ready and signed up
-        for t in range(2):
+
+        for t in range(10):
             self._add_new_team()
 
-        for c in range(3):
+        for c in range(10):
             self._add_new_challenge()
 
-        self.events = [ self._event_new_team,
-                        self._event_new_challenge,
-                        self._event_solve
-                      ]
+        # The duplicates help weight the randomizer
+        self.events = ([ self._event_new_team ] * 3 +
+                       [ self._event_new_challenge ] +
+                       [ self._event_solve ] * 10)
 
-    def start(self):
-        # The bootup data
-        self._send_snapshot()
-
-        while True:
-            time.sleep(self.conf["poll-interval"])
-            self._random_event()
-            self._send_snapshot()
+    def run(self):
+        self.running = True
+        self._main()
 
     def stop(self):
-        pass
+        self.running = False
 
     def update(self):
         pass
+
+    def _main(self):
+        # The bootup data
+        self._send_snapshot()
+
+        while self.running:
+            time.sleep(self.conf["poll-interval"])
+            self._random_event()
+            self._send_snapshot()
 
     def _event_new_team(self):
         self._add_new_team()

@@ -2,15 +2,24 @@ from tabulate import tabulate
 import sys
 import string
 import re
-from strip_ansi import strip_ansi
+
+import time
+import ftfy
+import unicodedata
+
 
 # A frontend which just clears the terminal and prints the scoreboard
 class FrontEnd:
     @staticmethod
     def help():
         return [
-                 "focus-team: one or more teams (name) to always show"
+                 "focus-teams: one or more teams (name) to always show",
+                 "max-count:   max length of scoreboard"
                ]
+
+    @staticmethod
+    def needs_main_thread():
+        return False
 
     def __init__(self, conf):
         self.conf = conf
@@ -19,11 +28,11 @@ class FrontEnd:
 
         pass
 
-    def start(self):
-        pass
+    def run(self):
+        self.running = True
+        while self.running:
+            time.sleep(1)
 
-    def stop(self):
-        pass
 
     # An event from the middle-end about something that changed
     def handle_event(self, event):
@@ -54,7 +63,13 @@ class FrontEnd:
         self._redraw()
 
     def _sanitize(self, text):
-        return strip_ansi(text)
+        cleaned = ftfy.fix_text(text, normalization="NFKC")
+
+        # Remove all that line-crossing garbage in the Marks characters
+        cleaned = u"".join( x for x in cleaned if not unicodedata.category(x).startswith("M") )
+
+        return cleaned
+
 
     def _redraw(self):
         ranking = [ (tid, t["place"]) for tid,t in self.teams.items() ]
@@ -75,16 +90,28 @@ class FrontEnd:
                 team["score"]
             ])
 
-        # Only show top 20
-        boundary = 20
+
+        # Only show top 20 if the user didn't specify further
+        boundary = self.conf["max-length"]
+
         cropped = table[:boundary]
 
         # Additionally, if any of the focused teams fall outside that list,
         # add them to the bottom
+
+        focused = []
         for t in table[boundary:]:
-            if any([ re.match(expr, t[2]) for expr in self.conf["focus-team"] ]):
-                cropped.append(t)
+            for expr in self.conf["focus-teams"]:
+                print(expr)
+                if re.match(expr, t[2]) != None:
+                    print(f"Focused {t[2]} due to {expr}")
+                    focused.append(t)
+                    break
+
+        if len(cropped) + len(focused) > boundary:
+            cropped = cropped[:boundary - len(focused)]
+
 
         # Clear screen
         print("\033[2J")
-        print(tabulate(cropped))
+        print(tabulate(cropped + focused))

@@ -1,6 +1,4 @@
 import queue
-import time
-
 
 # A frontend which only prints its events, nothing more
 class FrontEnd:
@@ -18,15 +16,11 @@ class FrontEnd:
         self.conf = conf
         self.events = queue.Queue()
 
-        print("Configuration: ")
-        for k,v in self.conf.items():
-            print(f"  {k}: {v}")
-
+    # This will be run in its own thread
     def run(self):
         while True:
             evt = self.events.get()
-            msg,data = evt
-            print(f"{msg}:  {data}"[:80])
+            # Do something with the data!
 
     # An event from the middle-end about something that changed
     def handle_event(self, event):
