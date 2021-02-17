@@ -1,6 +1,10 @@
 # CTF
 CTF Terminal Frontend
 
+
+[![asciicast](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG.png)](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG)
+(Click for an animated preview!)
+
 ```
 usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends] [--backend BACKEND] [--list-backends] [--poll-interval POLL_INTERVAL] [--config CONFIG] [--url URL] [--auth AUTH] [--focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]]]
                   [--max-length MAX_LENGTH]
