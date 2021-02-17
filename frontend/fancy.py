@@ -48,7 +48,6 @@ class FrontEnd:
         # Also contains self-posted actions, like "redraw"
         self.events = queue.Queue()
 
-
         pass
 
     def run(self):
@@ -84,6 +83,14 @@ class FrontEnd:
             "awards":  { "colour": self.color["award"], "bg": self.color["bg"] },
         }
 
+    def _limits(self, screen):
+        # At most, as many places as will fit in the window
+        max_len = screen.height - 1
+        if "max-count" in self.conf:
+            self.max_count = min(self.conf["max-count"], max_len)
+        else:
+            # Nobody specified, so let's default to a full screen of scores
+            self.max_count = max_len
 
     def _poll_events(self):
         try:
@@ -94,6 +101,7 @@ class FrontEnd:
     def _main(self, screen):
         self.screen = screen
         self._palette(screen)
+        self._limits(screen)
         self._redraw()
         while self.running:
             # This should be two different queues, but there's no select() implementation.
@@ -220,7 +228,7 @@ class FrontEnd:
         ranking = [ (team["place"], team) for tid,team in self.teams.items() ]
         ranking = sorted(ranking, key=lambda x: x[0])
 
-        boundary = self.conf["max-count"]
+        boundary = self.max_count
         toplist = ranking[:boundary]
 
         focused = []
