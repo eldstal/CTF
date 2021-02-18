@@ -63,6 +63,12 @@ def load_config():
     parser.add_argument("--auth", "-a", type=str, default=None,
                         help="Auth token for scoreboard. See backend list for specifics.")
 
+    parser.add_argument("--username", "-U", type=str, default=None,
+                        help="Username for scoreboard. See backend list for specifics.")
+
+    parser.add_argument("--password", "-P", type=str, default=None,
+                        help="Password for scoreboard. See backend list for specifics.")
+
     # These are the myriad drawing options, etc.
     parser.add_argument("--focus-teams", "-t", type=str, nargs="*",
                         help="One or more team names (regex) to always show")
@@ -112,6 +118,8 @@ def load_config():
     # Backend options
     override(conf, "url", args.url, "")
     override(conf, "auth", args.auth, "")
+    override(conf, "username", args.username, "")
+    override(conf, "password", args.password, "")
     override(conf, "poll-interval", args.poll_interval, 60)
 
     # Frontend options
