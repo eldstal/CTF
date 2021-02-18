@@ -44,7 +44,7 @@ class FirstBloodDisplay(Effect):
             TEAM  = self._new_drifter(screen, team["name"], team_color, [], 12, FIRST["h"]+2, drift_dist)
             CHALL = self._new_drifter(screen, challenge["name"], chall_color, [], TEAM["x1"] + 4, TEAM["y"]+1, drift_dist)
 
-            if FIRST["w"] + BLOOD["w"] + 15 < screen.width:
+            if FIRST["w"] + BLOOD["w"] + 7 < screen.width:
                 break
             continue
 
@@ -128,8 +128,8 @@ class FirstBloodDisplay(Effect):
                     if len(d["shade_colors"]) > 0 and len(txt.strip()) > 0:
 
                         # Identify every leading and trailing edge of the text
-                        lead_edges  = [ i for i in range(len(txt)-1)  if txt[i] == " " and txt[i+1] != " " ]
-                        trail_edges = [ i for i in range(1, len(txt)) if txt[i] == " " and txt[i-1] != " " ]
+                        lead_edges  = [ i for i in range(-1, len(txt)-1)  if (i == -1 or txt[i] == " ") and txt[i+1] != " " ]
+                        trail_edges = [ i for i in range(1, len(txt))     if (txt[i] == " " or i == len(txt)-1) and txt[i-1] != " " ]
 
                         shades = d["shade_colors"]
 
