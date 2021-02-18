@@ -2,7 +2,10 @@
 CTF Terminal Frontend
 
 ```
-usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends] [--backend BACKEND] [--list-backends] [--poll-interval POLL_INTERVAL] [--config CONFIG] [--url URL] [--auth AUTH] [--focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]]]
+usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends]
+                  [--backend BACKEND] [--list-backends] [--poll-interval POLL_INTERVAL]
+                  [--config CONFIG] [--url URL] [--auth AUTH] [--username USERNAME]
+                  [--password PASSWORD] [--focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]]]
                   [--max-length MAX_LENGTH]
 
 Fetch and display a live CTF scoreboard
@@ -21,6 +24,10 @@ optional arguments:
                         Load a configuration file.
   --url URL, -u URL     URL to scoreboard. See backend list for specifics.
   --auth AUTH, -a AUTH  Auth token for scoreboard. See backend list for specifics.
+  --username USERNAME, -U USERNAME
+                        Username for scoreboard. See backend list for specifics.
+  --password PASSWORD, -P PASSWORD
+                        Password for scoreboard. See backend list for specifics.
   --focus-teams [FOCUS_TEAMS [FOCUS_TEAMS ...]], -t [FOCUS_TEAMS [FOCUS_TEAMS ...]]
                         One or more team names (regex) to always show
   --max-length MAX_LENGTH
@@ -178,7 +185,10 @@ Omitted fields indicate that data is not available, so frontend should format ac
 # TODO
 
 ## Backends
-- CTFd
+- hxp
+- Whatever JustCTF uses
+- Some customizable "Scrape and parse a table" backend?
+  - Maybe that can make it easier to rig a custom one-use backend on demand?
 - ...
 
 A global (persistent) cookie jar to keep from having to authenticate new sessions on every restart
@@ -186,7 +196,7 @@ A global (persistent) cookie jar to keep from having to authenticate new session
 ## Frontend
 A simple print-a-table thing to begin with, this is already implemented as `--frontend basic`
 
-After that, the [sky](https://blessed.readthedocs.io/en/latest/) is the limit!
+A fancier ready-to-use thing (it's the default) is `--frontend fancy`
 
 Support is in place for multiple frontends active at the same time, so maybe one for sound, one for video, one for external lighting effects, etc.
 
