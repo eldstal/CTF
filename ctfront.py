@@ -104,7 +104,7 @@ def load_config():
         if default is not None:
             if conf_key not in conf:
                 conf[conf_key] = default
-                
+
     def force_list(conf, conf_key):
         if conf_key in conf:
             if type(conf[conf_key]) == list:

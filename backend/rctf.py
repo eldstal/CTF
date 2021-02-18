@@ -41,27 +41,37 @@ class BackEnd:
         self.authenticated = False
         self.authtoken = ""
 
+        self.do_challenges = False
+        self.do_solves = False
+
+
         if "auth" in conf:
             if self._login():
                 print("Logged in successfully.")
                 self.authenticated = True
+                self.do_challenges = True
+                self.do_solves = True
+
             else:
                 print("Login failed. Scores will still be available, but no challs/solves")
 
+
+        self._test_latency()
 
 
 
     def run(self):
         self.running = True
         while self.running:
+
+            if self.do_challenges and self.authenticated:
+                challs = self._get_challenges(self.do_solves)
+                if challs is not None:
+                    self.middle.handle_snapshot(("challenges", { "challenges": challs }))
+
             scoreboard = self._get_scoreboard()
             if scoreboard is not None:
                 self.middle.handle_snapshot(("scoreboard", { "scores": scoreboard }))
-
-            if self.authenticated:
-                challs = self._get_challenges()
-                if challs is not None:
-                    self.middle.handle_snapshot(("challenges", { "challenges": challs }))
 
             time.sleep(self.conf["poll-interval"])
 
@@ -122,7 +132,13 @@ class BackEnd:
         ret = []
         expected_length = count
         while len(ret) < expected_length:
-            resp = self.session.get(self.URL + f"/api/v1/challs/{challenge_id}/solves", params={"limit": 10, "offset": len(ret)})
+            try:
+                resp = self.session.get(self.URL + f"/api/v1/challs/{challenge_id}/solves",
+                                        params={"limit": 10, "offset": len(ret)},
+                                        timeout=15)
+            except ReadTimeout:
+                return None
+
             msg = resp.json()
 
             if msg["kind"] != "goodChallengeSolves":
@@ -134,7 +150,7 @@ class BackEnd:
                 ret.append(s["userId"])
         return ret
 
-    def _get_challenges(self):
+    def _get_challenges(self, do_solves=False):
         # We can only request 100 at a time, so we need to chain multiple requests.
         ret = []
 
@@ -151,13 +167,33 @@ class BackEnd:
                     "name": row["name"],
                     "challenge_id": row["id"],
                     "points": row["points"],
-                    "solves": self._get_solves(row["id"], count=row["solves"]),
                     "categories": [ row["category"] ]
 
                 }
 
+            if do_solves:
+                solves = self._get_solves(c["challenge_id"], count=row["solves"])
+                if solves is None:
+                    # Give up on that, this time around
+                    do_solves = False
+                else:
+                    c["solves"] = solves
+
             ret.append(c)
 
-        #print(ret)
-
         return ret
+
+    def _test_latency(self):
+        if self.do_challenges and self.authenticated:
+            print("Testing server latency...")
+
+            t0 = time.time()
+            challs = self._get_challenges(True)
+            t1 = time.time()
+
+            chall_duration = int(t1 - t0)
+            if chall_duration > 10:
+                print(f"Fetching challenges/solves took {chall_duration} seconds! This host is probably slow or overloaded. Disabling challenges/solves.")
+                self.do_challenges = False
+                self.do_solves = False
+
