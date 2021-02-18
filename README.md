@@ -1,10 +1,16 @@
-# CTF
-CTF Terminal Frontend
+# CTF Terminal Frontend
+Fetches and displays live scores from Capture The Flag tournaments in your terminal. With *pep* and *zing*!
 
+## Supported CTF systems:
+* rCTF
+* CTFd
+* hxp CTF
 
+## Example
 [![asciicast](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG.png)](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG)
 (Click for an animated preview!)
 
+## Usage
 ```
 usage: ctfront.py [-h] [--frontend [FRONTEND [FRONTEND ...]]] [--list-frontends]
                   [--backend BACKEND] [--list-backends] [--poll-interval POLL_INTERVAL]
@@ -39,6 +45,7 @@ optional arguments:
 
 ```
 
+# Internals
 ## Backend
 Fetches scoreboard and team stats and stuff from a CTF server. Tailor one to whatever score system the event is using.
 
@@ -189,18 +196,15 @@ Omitted fields indicate that data is not available, so frontend should format ac
 # TODO
 
 ## Backends
-- hxp
 - Whatever JustCTF uses
 - Some customizable "Scrape and parse a table" backend?
   - Maybe that can make it easier to rig a custom one-use backend on demand?
+  - For now, take a look at `backends/hxp.py` for an example of beautifulsoup
 - ...
 
 A global (persistent) cookie jar to keep from having to authenticate new sessions on every restart
 
 ## Frontend
-A simple print-a-table thing to begin with, this is already implemented as `--frontend basic`
-
-A fancier ready-to-use thing (it's the default) is `--frontend fancy`
 
 Support is in place for multiple frontends active at the same time, so maybe one for sound, one for video, one for external lighting effects, etc.
 
