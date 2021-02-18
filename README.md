@@ -8,6 +8,7 @@ Fetches and displays live scores from Capture The Flag tournaments in your termi
 
 ## Example
 [![asciicast](preview.png)](https://asciinema.org/a/mds9ucDsbflnPnrnjFTW9WkcM)
+
 (Click for an animated preview!)
 
 ## Usage
