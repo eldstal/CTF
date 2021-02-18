@@ -49,7 +49,7 @@ def draw_func(screen):
     effect_chains = [
                 #[RainbowWipe(screen, 15)],
                 #[ NoiseWipe(screen, 40) ],
-                [ FirstBloodDisplay(screen, team, chall, duration=60) ]
+                [ FirstBloodDisplay(screen, team, chall, duration=60, shade_colors=[ 196, 82, 27 ]) ]
               ]
 
 

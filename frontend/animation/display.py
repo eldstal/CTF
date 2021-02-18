@@ -6,11 +6,12 @@ from pyfiglet import Figlet
 
 class FirstBloodDisplay(Effect):
 
-    def __init__(self, screen, team, challenge, duration=None, color=None, team_color=None, chall_color=None, **kwargs):
+    def __init__(self, screen, team, challenge, duration=None, color=None, shade_colors=None, team_color=None, chall_color=None, **kwargs):
         super(FirstBloodDisplay, self).__init__(screen, **kwargs)
 
         if duration is None: duration = 60
         if color is None: color = Screen.COLOUR_RED
+        if shade_colors is None: shade_colors = []
         if team_color is None: team_color = Screen.COLOUR_WHITE
         if chall_color is None: chall_color = Screen.COLOUR_WHITE
 
@@ -38,10 +39,10 @@ class FirstBloodDisplay(Effect):
                 render = figlet.renderText
 
             drift_dist = 5
-            FIRST = self._new_drifter(screen, render("First"), color, 5, 0, drift_dist)
-            BLOOD = self._new_drifter(screen, render("Blood"), color, FIRST["x1"] + FIRST["w"] + 2, 2, drift_dist)
-            TEAM  = self._new_drifter(screen, team["name"], team_color, 12, FIRST["h"]+2, drift_dist)
-            CHALL = self._new_drifter(screen, challenge["name"], chall_color, TEAM["x1"] + 4, TEAM["y"]+1, drift_dist)
+            FIRST = self._new_drifter(screen, render("First"), color, shade_colors, 5, 0, drift_dist)
+            BLOOD = self._new_drifter(screen, render("Blood"), color, shade_colors, FIRST["x1"] + FIRST["w"] + 2, 2, drift_dist)
+            TEAM  = self._new_drifter(screen, team["name"], team_color, [], 12, FIRST["h"]+2, drift_dist)
+            CHALL = self._new_drifter(screen, challenge["name"], chall_color, [], TEAM["x1"] + 4, TEAM["y"]+1, drift_dist)
 
             if FIRST["w"] + BLOOD["w"] + 15 < screen.width:
                 break
@@ -64,7 +65,7 @@ class FirstBloodDisplay(Effect):
 
 
     # Pass in the x and y where the text should start drifting slowly
-    def _new_drifter(self, screen, text, color, x, y, drift_dist):
+    def _new_drifter(self, screen, text, color, shade_colors, x, y, drift_dist):
 
         # Phase 0: Invisible
         # Phase 1: Smashing in at light speed
@@ -73,7 +74,8 @@ class FirstBloodDisplay(Effect):
         lines = text.split("\n")
         width = max([ len(l) for l in lines] )
         return {
-                 "text": text, "w": width, "h": len(lines), "color": color,
+                 "text": text, "w": width, "h": len(lines),
+                 "color": color, "shade_colors": shade_colors,
                  "phase": 0, "x": screen.width, "y": y,
                  "x1": x, "x2": x-drift_dist,
                }
@@ -105,7 +107,7 @@ class FirstBloodDisplay(Effect):
 
             # Sync up phase 2 so they drift together
             elif d["phase"] == 2:
-                if frame_no % 15 == 0:
+                if frame_no % self._v2 == 0:
                     d["x"] -= 1
 
             lines = d["text"].split("\n")
@@ -118,6 +120,41 @@ class FirstBloodDisplay(Effect):
                 txt += " "*(W - len(txt))
 
                 txt = txt[:W - x]
-                self._screen.print_at(txt, int(d["x"] + 0.5), y, d["color"], transparent=False)
+                self._screen.print_at(txt, x, y, d["color"], transparent=False)
 
+                # Optionally, drifting text gets a shady background around its edges
+                # to help with the illusion of a slower drift. It's pretty neat.
+                if d["phase"] == 2:
+                    if len(d["shade_colors"]) > 0 and len(txt.strip()) > 0:
+
+                        # Identify every leading and trailing edge of the text
+                        lead_edges  = [ i for i in range(len(txt)-1)  if txt[i] == " " and txt[i+1] != " " ]
+                        trail_edges = [ i for i in range(1, len(txt)) if txt[i] == " " and txt[i-1] != " " ]
+
+                        shades = d["shade_colors"]
+
+                        drift_progress = (frame_no % self._v2) / self._v2
+                        shade_idx  = int((len(shades) + 1) * drift_progress) - 1
+
+                        #
+                        # Leading shade
+                        #
+
+                        # Overwrite the last whitespace just before the text begins
+                        for text_start in lead_edges:
+                            lead_text = txt[text_start+1]
+                            lead_x = x + text_start
+
+                            if shade_idx >= 0:
+                                self._screen.print_at(lead_text, lead_x, y, shades[shade_idx], transparent=False)
+
+                        #
+                        # Trailing shade
+                        #
+                        for text_end in trail_edges:
+                            trail_text = txt[text_end-1]
+                            trail_x = x + text_end - 1
+
+                            if shade_idx >= 0:
+                                self._screen.print_at(trail_text, trail_x, y, shades[len(shades) - shade_idx - 1], transparent=False)
 

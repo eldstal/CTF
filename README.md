@@ -7,7 +7,7 @@ Fetches and displays live scores from Capture The Flag tournaments in your termi
 * hxp CTF
 
 ## Example
-[![asciicast](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG.png)](https://asciinema.org/a/oQP0RDQ31o4VIwb6z6faplwQG)
+[![asciicast](https://asciinema.org/a/NHzFa6SLWp7vbaywfOnYAWauk.png)](https://asciinema.org/a/NHzFa6SLWp7vbaywfOnYAWauk)
 (Click for an animated preview!)
 
 ## Usage

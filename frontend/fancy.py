@@ -73,7 +73,8 @@ class FrontEnd:
             "focus": 213,   # Pink
             "accent": 255,  # White
             "award": 220,  # GOLD
-            "firstblood": 196,  # GOLD
+            "firstblood": 196,  # BLOOD RED
+            "firstblood_shades": [ 52, 88, 124, 160 ]   # Dark to bright red
         }
 
         # Double-splat these into Screen.print_at()
@@ -282,7 +283,7 @@ class FrontEnd:
                     ("#",  "place"),
                     ("Score", "score"),
                     ("          ", "awards"),   # Prints up to 5x unicode trophy, which may be quite wide.
-                    ("Team                          ",  "name"),
+                    ("Team",  "name"),
                   ]
 
         toplist, focused = self._make_toplist()
@@ -335,7 +336,9 @@ class FrontEnd:
 
                 # Don't overflow the window
                 if y > h: break
-                text = text[:w-x]
+
+                if len(text) > w-x:
+                    text = text[:w-x-3] + "..."
 
                 screen.print_at(text, x, y, transparent=True, **attr)
 
@@ -372,6 +375,9 @@ class FrontEnd:
         attr = self._attr_by_team(team)
         self._animate([
                    self._trans(NoiseWipe(self.screen, 30)),
-                   Scene([FirstBloodDisplay(self.screen, team, chall, color=self.color["firstblood"], team_color=attr["colour"])])
+                   Scene([FirstBloodDisplay(self.screen, team, chall,
+                                            color=self.color["firstblood"],
+                                            shade_colors=self.color["firstblood_shades"],
+                                            team_color=attr["colour"])])
                  ])
 
