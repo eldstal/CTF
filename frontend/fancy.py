@@ -152,6 +152,9 @@ class FrontEnd:
                 for c in data["challenges"]["challenges"]:
                     cid = c["challenge_id"]
                     self.challenges[cid] = c
+                    self._chall_add_stats(self.challenges[cid])
+                    for tid in self.challenges[cid]["solves"]:
+                        self._register_solve(cid, tid)
 
         elif msg == "new_team":
             tid = data["team_id"]
@@ -177,21 +180,35 @@ class FrontEnd:
         elif msg == "solve":
             cid = data["challenge_id"]
             tid = data["team_id"]
-            self.challenges[cid]["solves"].append(tid)
+            self._register_solve(cid, tid)
             if data["first"]:
-                self.teams[tid]["firsts"].append(cid)
-                self._team_add_stats(self.teams[tid])
                 self._animate_firstblood(self.challenges[cid], self.teams[tid])
 
         elif msg == "new_challenge":
             cid = data["challenge_id"]
             self.challenges[cid] = data
+            self._chall_add_stats(self.challenges[cid])
+            for tid in self.challenges[cid]["solves"]:
+                self._register_solve(cid, tid)
 
         else:
             # It was an unknown message from the middle-end. Nevermind
             return
 
         self._schedule_redraw()
+
+    def _register_solve(self, cid, tid):
+        if cid not in self.challenges:
+            return
+
+        chall = self.challenges[cid]
+        if tid not in chall["solves"]:
+            chall["solves"].append(tid)
+
+        if chall["solves"].index(tid) == 0:
+            if tid in self.teams:
+                self.teams[tid]["firsts"].append(cid)
+                self._team_add_stats(self.teams[tid])
 
     # Add/calculate additional fields for our internal use
     def _team_add_stats(self, team):
@@ -211,6 +228,10 @@ class FrontEnd:
         if team["old_place"] > team["place"]:
             team["marker"] = "▲"
 
+    # Add/calculate additional fields for our internal use
+    def _chall_add_stats(self, chall):
+        if "solves" not in chall:
+            chall["solves"] = []
 
     def _sanitize(self, text):
         cleaned = ftfy.fix_text(text, normalization="NFKC")
