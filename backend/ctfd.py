@@ -65,7 +65,8 @@ class BackEnd:
         # The right thing to do is to fall back to fewer requests.
         # The scoreboard can be queried in a single request, so we can
         # Just turn off challenge queries (which are quite cumbersome)
-        self._test_latency()
+        if not self._test_connection():
+            print("Connection test failed. You may need to authenticate, or the CTF hasn't started yet.")
 
 
     def run(self):
@@ -124,7 +125,12 @@ class BackEnd:
             print(resp.text)
             return None
 
-        msg = resp.json()
+        try:
+            msg = resp.json()
+        except:
+            print("Leaderboard fetch failed:")
+            print(resp.text)
+            return None
 
         if msg["success"] != True:
             print("leaderboard fetch failed:")
@@ -204,13 +210,18 @@ class BackEnd:
 
         return ret
 
-    def _test_latency(self):
+    def _test_connection(self):
         if self.do_challenges and self.authenticated:
             print("Testing server latency...")
 
             t0 = time.time()
             challs = self._get_challenges(False)
             t1 = time.time()
+
+            if challs is None:
+                self.do_challenges = False
+                self.do_solves = False
+                return False
 
             chall_duration = int(t1 - t0)
             if chall_duration > 10:
@@ -230,3 +241,4 @@ class BackEnd:
                 print(f"Fetching a few solves took {solve_duration} seconds! This host is probably slow or overloaded. Disabling solves.")
                 self.do_solves = False
 
+        return True
