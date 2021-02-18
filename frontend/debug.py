@@ -20,13 +20,15 @@ class FrontEnd:
 
         print("Configuration: ")
         for k,v in self.conf.items():
+            if k in [ "password", "auth" ] and len(v) != 0:
+                v = "***************"
             print(f"  {k}: {v}")
 
     def run(self):
         while True:
             evt = self.events.get()
             msg,data = evt
-            print(f"{msg}:  {data}"[:80])
+            print(f"{msg}:  {data}"[:800])
 
     # An event from the middle-end about something that changed
     def handle_event(self, event):
