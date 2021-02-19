@@ -197,7 +197,11 @@ Omitted fields indicate that data is not available, so frontend should format ac
 # TODO
 
 ## Backends
-- Whatever JustCTF uses
+- JustCTF
+- [picoCTF](https://github.com/picoCTF/picoCTF)
+- [MITRE](https://github.com/mitre-cyber-academy/ctf-scoreboard)
+- [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
+- [google](https://github.com/google/ctfscoreboard)
 - Some customizable "Scrape and parse a table" backend?
   - Maybe that can make it easier to rig a custom one-use backend on demand?
   - For now, take a look at `backends/hxp.py` for an example of beautifulsoup
