@@ -2,9 +2,10 @@
 Fetches and displays live scores from Capture The Flag tournaments in your terminal. With *pep* and *zing*!
 
 ## Supported CTF systems:
-* rCTF
-* CTFd
-* hxp CTF
+* [rCTF](https://github.com/redpwn/rctf)
+* [CTFd](https://ctfd.io)
+* [hxp](https://2020.ctf.link)
+- [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
 
 ## Example
 [![asciicast](preview.png)](https://asciinema.org/a/mds9ucDsbflnPnrnjFTW9WkcM)
@@ -200,7 +201,6 @@ Omitted fields indicate that data is not available, so frontend should format ac
 - JustCTF
 - [picoCTF](https://github.com/picoCTF/picoCTF)
 - [MITRE](https://github.com/mitre-cyber-academy/ctf-scoreboard)
-- [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
 - [google](https://github.com/google/ctfscoreboard)
 - Some customizable "Scrape and parse a table" backend?
   - Maybe that can make it easier to rig a custom one-use backend on demand?
