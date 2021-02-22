@@ -88,15 +88,21 @@ class BackEnd:
         return url
 
     def _login(self):
-        resp = self.session.post(self.URL + "/api/v1/auth/login", json={ "teamToken": self.conf["auth"] })
-        msg = resp.json()
+        failed = False
+        try:
+            resp = self.session.post(self.URL + "/api/v1/auth/login", json={ "teamToken": self.conf["auth"] })
+            msg = resp.json()
+        except:
+            failed = True
+
+        if failed or resp.status_code != 200:
+            print("Login failed.")
+            return False
 
         if msg["kind"] == "goodLogin":
             self.authtoken = msg["data"]["authToken"]
             self.session.headers.update({ "Authorization": f"Bearer {self.authtoken}" }) 
             return True
-
-        print(resp.text)
 
         return False
 
@@ -105,12 +111,15 @@ class BackEnd:
         leader_data = []
         expected_length = 1
         while len(leader_data) < expected_length:
-            resp = self.session.get(self.URL + "/api/v1/leaderboard/now", params={ "limit": 100, "offset": len(leader_data)})
-            msg = resp.json()
+            failed = False
+            try:
+                resp = self.session.get(self.URL + "/api/v1/leaderboard/now", params={ "limit": 100, "offset": len(leader_data)})
+                msg = resp.json()
+            except:
+                failed = True
 
-            if msg["kind"] != "goodLeaderboard":
-                print("leaderboard fetch failed:")
-                print(msg)
+            if failed or "kind" not in msg or msg["kind"] != "goodLeaderboard":
+                print("leaderboard fetch failed")
                 return None
 
             expected_length = msg["data"]["total"]
@@ -136,10 +145,13 @@ class BackEnd:
                 resp = self.session.get(self.URL + f"/api/v1/challs/{challenge_id}/solves",
                                         params={"limit": 10, "offset": len(ret)},
                                         timeout=15)
+
+                msg = resp.json()
             except ReadTimeout:
                 return None
 
-            msg = resp.json()
+            except:
+                return None
 
             if msg["kind"] != "goodChallengeSolves":
                 print("solves fetch failed out:")
@@ -154,12 +166,17 @@ class BackEnd:
         # We can only request 100 at a time, so we need to chain multiple requests.
         ret = []
 
-        resp = self.session.get(self.URL + "/api/v1/challs")
-        msg = resp.json()
+        failed = False
+        try:
+            resp = self.session.get(self.URL + "/api/v1/challs", timeout=10)
+            msg = resp.json()
+        except ReadTimeout:
+            failed = True
+        except:
+            failed = True
 
-        if msg["kind"] != "goodChallenges":
-            print("chall fetch failed:")
-            print(msg)
+        if failed or not ("kind" in msg and msg["kind"] == "goodChallenges"):
+            print("chall fetch failed")
             return None
 
         for row in msg["data"]:

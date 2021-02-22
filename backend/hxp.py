@@ -80,13 +80,17 @@ class BackEnd:
         teams = []
         challs = []
 
+        failed = False
+
         # Handy dandy matrix of everything
         # Sadly, we have to parse the table, but that's allright
-        resp = self.session.get(self.URL + "/public/scoreboard/max/")
+        try:
+            resp = self.session.get(self.URL + "/public/scoreboard/max/")
+        except:
+            failed = True
 
-        if resp.status_code != 200:
-            print("chall fetch failed:")
-            print(resp.text)
+        if failed or resp.status_code != 200:
+            print("Chall fetch failed")
             return None
 
         # BS filters to find the elements that we are interested in

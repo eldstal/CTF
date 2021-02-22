@@ -64,13 +64,15 @@ class BackEnd:
 
         teams = []
 
-        # Handy dandy matrix of everything
         # Sadly, we have to parse the table, but that's allright
-        resp = self.session.get(self.URL + "/scoreboard")
+        failed = False
+        try:
+            resp = self.session.get(self.URL + "/scoreboard")
+        except:
+            failed = True
 
-        if resp.status_code != 200:
+        if failed or resp.status_code != 200:
             print("scoreboard fetch failed:")
-            print(resp.text)
             return None
 
         # BS filters to find the elements that we are interested in

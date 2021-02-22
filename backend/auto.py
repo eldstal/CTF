@@ -1,3 +1,5 @@
+import traceback
+
 # A pseudo-backend which just tries to pick one of the real ones properly.
 # Any backend with a static supports(conf, url) method can return True to claim support
 
@@ -23,7 +25,7 @@ def SelectBackend(conf, middle):
                 print(f"Autodetection found backend {name}.")
                 return implementation(conf, middle)
         except Exception as e:
-            print(e)
+            traceback.print_exception(e)
             pass
 
     print(f"Autodetection found no suitable backend. Try specifying with --backend.")

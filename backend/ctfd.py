@@ -21,8 +21,10 @@ class BackEnd:
 
     @staticmethod
     def supports(conf, url):
-        # Return True if the url seems like a system we support
-        resp = requests.get(url)
+        try:
+            resp = requests.get(url, timeout=2)
+        except:
+            return False
 
         # This is in the footer of every page.
         if "Powered by CTFd" in resp.text:
@@ -98,17 +100,30 @@ class BackEnd:
 
     def _login(self):
         # Extract a nonce
-        loginpage = self.session.get(self.URL + "/login")
+        failed = False
+        try:
+            loginpage = self.session.get(self.URL + "/login")
+        except:
+            failed = True
+
+        # Can't even load the login form
+        if failed or loginpage.status_code != 200:
+            print("Failed to load login page")
+            return False
 
         soup = BeautifulSoup(loginpage.text, "html.parser")
         nonce = soup.find("input", id="nonce")["value"]
         print(f"Login nonce: {nonce}")
 
-        resp = self.session.post(self.URL + "/login", allow_redirects=False,
-            data={ "nonce": nonce,
-                   "_submit": "Submit",
-                   "name": self.conf["username"],
-                   "password": self.conf["password"] })
+        try:
+            resp = self.session.post(self.URL + "/login", allow_redirects=False,
+                data={ "nonce": nonce,
+                       "_submit": "Submit",
+                       "name": self.conf["username"],
+                       "password": self.conf["password"] })
+        except:
+            print("Login timed out")
+            return False
 
         # A 200 is a failed login, actually.
         # A successful login gives a 302 and redirects you.
@@ -118,21 +133,23 @@ class BackEnd:
         return True
 
     def _get_scoreboard(self):
-        resp = self.session.get(self.URL + "/api/v1/scoreboard")
+        failed = False
+        try:
+            resp = self.session.get(self.URL + "/api/v1/scoreboard")
+        except:
+            failed = True
 
-        if resp.status_code != 200:
-            print("chall fetch failed:")
-            print(resp.text)
+        if failed or resp.status_code != 200:
+            print("Scoreboard fetch failed")
             return None
 
         try:
             msg = resp.json()
         except:
-            print("Leaderboard fetch failed:")
-            print(resp.text)
+            print("Leaderboard fetch failed")
             return None
 
-        if msg["success"] != True:
+        if not ("success" in msg and msg["success"] == True):
             print("leaderboard fetch failed:")
             print(msg)
             return None
@@ -156,9 +173,14 @@ class BackEnd:
         except ReadTimeout:
             return None
 
-        msg = resp.json()
+        try:
+            msg = resp.json()
+        except:
+            print("Solves fetch failed:")
+            print(resp.text)
+            return None
 
-        if msg["success"] != True:
+        if not ("success" in msg and msg["success"] == True):
             print("solves fetch failed out:")
             print(msg)
             return ret
@@ -182,9 +204,14 @@ class BackEnd:
             print(resp.text)
             return None
 
-        msg = resp.json()
+        try:
+            msg = resp.json()
+        except:
+            print("Chall fetch failed:")
+            print(resp.text)
+            return None
 
-        if msg["success"] != True:
+        if not ("success" in msg and msg["success"] == True):
             print("chall fetch failed:")
             print(msg)
             return None
