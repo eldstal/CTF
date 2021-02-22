@@ -183,7 +183,8 @@ class FrontEnd:
             tid = data["team_id"]
             self._register_solve(cid, tid)
             if data["first"]:
-                self._animate_firstblood(self.challenges[cid], self.teams[tid])
+                if tid in self.teams and cid in self.challenges:
+                    self._animate_firstblood(self.challenges[cid], self.teams[tid])
 
         elif msg == "new_challenge":
             cid = data["challenge_id"]
