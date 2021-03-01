@@ -40,8 +40,8 @@ class BackEnd:
 
 
         # Help the user out a little bit, they can specify some various links
-        self.URL = self._baseurl(conf["url"])
-        print(f"Attempting to use CTFd instance at {self.URL}")
+        self.base_URL = self._baseurl(conf["url"])
+        print(f"Attempting to use CTFd instance at {self.base_URL}")
 
 
         self.session = requests.Session()
@@ -60,6 +60,9 @@ class BackEnd:
             else:
                 print("Login failed. Scores will still be available, but no challs/solves")
 
+        # This sets up the URLs and functions based on
+        # autodetection of various ctfd versions. Not sure why there's such fragmentation.
+        self._detect_version()
 
         # Several smaller CTFs have had load problems,
         # and a client like ours isn't going to help the matter.
@@ -98,11 +101,59 @@ class BackEnd:
         url = re.sub("/login.*", "", url)
         return url
 
+    # Some CTFs disable the JSON API, so we have to fall back to stupid scraping techniques.
+    def _detect_version(self):
+        api_resp = self.session.get(self.base_URL + "/api/v1/scoreboard")
+        if api_resp.status_code == 200:
+            print("Using CTFd REST API.")
+            self.scoreboard_URL = self.base_URL + "/api/v1/scoreboard"
+            self.solve_URL = lambda challenge_id: self.base_URL + f"/api/v1/challenges/{challenge_id}/solves"
+            self.challenges_URL = self.base_URL + "/api/v1/challenges"
+
+            self._get_scoreboard = self._get_scoreboard_api
+            self._get_solves = self._get_solves_api
+            self._get_challenges = self._get_challenges_api
+
+            return True
+
+        # aeroCTF 2021 had some other version, with the API disabled
+        # but special JSON endpoints for the challenges and solves
+        # It smells a bit like an older version, before the structured REST API
+        try:
+            api_chals = self.session.get(self.base_URL + "/chals")
+            j = api_chals.json()
+            if api_chals.status_code == 200:
+                print("Using sneaky API")
+                self.scoreboard_URL = self.base_URL + "/scoreboard"
+                self.solve_URL = lambda challenge_id: self.base_URL + f"/chal/{challenge_id}/solves"
+                self.challenges_URL = self.base_URL + "/chals"
+
+                self._get_scoreboard = self._get_scoreboard_scrape
+                self._get_solves = self._get_solves_sneaky_api
+                self._get_challenges = self._get_challenges_sneaky_api
+
+                return True
+        except:
+            pass
+
+
+        print("Unable to identify CTFd API version. Falling back to scrape and parse.")
+        self.scoreboard_URL = self.base_URL + "/scoreboard"
+        self.solve_URL = lambda challenge_id: self.base_URL + "/404"
+        self.challenges_URL = self.base_URL + "/challenges"
+
+        self._get_scoreboard = self._get_scoreboard_scrape
+        self._get_solves = lambda challenge_id: []
+        self._get_challenges = lambda: []
+        self.do_challenges = False
+        self.do_solves = False
+        return False
+
     def _login(self):
         # Extract a nonce
         failed = False
         try:
-            loginpage = self.session.get(self.URL + "/login")
+            loginpage = self.session.get(self.base_URL + "/login")
         except:
             failed = True
 
@@ -112,11 +163,17 @@ class BackEnd:
             return False
 
         soup = BeautifulSoup(loginpage.text, "html.parser")
-        nonce = soup.find("input", id="nonce")["value"]
+        nonce = soup.find([
+                            # This site has the proper REST API
+                            lambda tag: tag.name == "input" and (tag.has_attr("id") and tag["id"] == "nonce"),
+
+                            # This has the sneaky API
+                            lambda tag: tag.name == "input" and (tag.has_attr("name") and tag["name"] == "nonce")
+                          ])["value"]
         print(f"Login nonce: {nonce}")
 
         try:
-            resp = self.session.post(self.URL + "/login", allow_redirects=False,
+            resp = self.session.post(self.base_URL + "/login", allow_redirects=False,
                 data={ "nonce": nonce,
                        "_submit": "Submit",
                        "name": self.conf["username"],
@@ -132,10 +189,149 @@ class BackEnd:
 
         return True
 
-    def _get_scoreboard(self):
+    #
+    # Older JSON API, available for some of the data
+    #
+
+    def _get_solves_sneaky_api(self, challenge_id):
+        ret = []
+
+        try:
+            resp = self.session.get(self.solve_URL(challenge_id), timeout=15)
+        except ReadTimeout:
+            return None
+
+        try:
+            msg = resp.json()
+        except:
+            print("Solves fetch failed:")
+            print(resp.text)
+            return None
+
+        if not ("teams" in msg):
+            print("solves fetch failed out:")
+            print(msg)
+            return ret
+
+        for solv in msg["teams"]:
+            ret.append(solv["id"])
+
+        return ret
+
+    def _get_challenges_sneaky_api(self, do_solves=False):
+
+        ret = []
+
+        try:
+            resp = self.session.get(self.challenges_URL, timeout = 30)
+        except ReadTimeout:
+            return None
+
+        if resp.status_code != 200:
+            print("chall fetch failed:")
+            print(resp.text)
+            return None
+
+        try:
+            msg = resp.json()
+        except:
+            print("Chall fetch failed:")
+            print(resp.text)
+            return None
+
+        if not ("game" in msg):
+            print("chall fetch failed:")
+            print(msg)
+            return None
+
+        for row in msg["game"]:
+            c = {
+                    "name": row["name"],
+                    "challenge_id": row["id"],
+                    "points": row["value"],
+                    "categories": [ row["category"] ]
+
+                }
+
+            if do_solves:
+                solves = self._get_solves(c["challenge_id"])
+                if solves is None:
+                    # Give up on that, this time around
+                    do_solves = False
+                else:
+                    c["solves"] = solves
+
+            ret.append(c)
+
+        return ret
+
+
+
+    #
+    # Scrape the webpages like some sort of animal
+    # This is only used if API access fails (i.e. API is disabled serverside)
+    #
+
+    def _get_scoreboard_scrape(self):
+        teams = []
+
+        failed = False
+
+        # Handy dandy matrix of everything
+        # Sadly, we have to parse the table, but that's allright
+        try:
+            resp = self.session.get(self.scoreboard_URL)
+        except:
+            failed = True
+
+        if failed or resp.status_code != 200:
+            print("Chall fetch failed")
+            return None
+
+        # BS filters to find the elements that we are interested in
+        #filt_chall_link = lambda tag: tag.name == "a" and tag.has_attr("href") and "/internal/challenge/" in tag["href"]
+        filt_team_row   = lambda tag: tag.name == "tr" and tag.parent.name == "tbody"
+
+        # Accidentally detects ISO-8859 due to some german team names or something
+        # The page is explicitly encoded as utf-8, though.
+        resp.encoding = "utf-8"
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        rows     = soup.findAll(filt_team_row)
+
+        for r in rows:
+            head = r.find("th")
+            cells = r.find_all("td")
+
+            t = {}
+            a = cells[0].find("a")
+            url = a["href"]
+            t["place"] = int(head.string)
+            t["team_id"] = re.match("/team(s?)/([0-9]+)", url)[2]
+            t["name"] = str(a.string)
+            t["score"] = str(cells[1].string)
+
+            teams.append(t)
+
+        return teams
+
+    def _get_solves_scrape(self, challenge_id):
+        return []
+
+    def _get_challenges_scrape(self, do_solves=False):
+
+        ret = []
+        return ret
+
+
+    #
+    # Use API, if it's allowed
+    #
+
+    def _get_scoreboard_api(self):
         failed = False
         try:
-            resp = self.session.get(self.URL + "/api/v1/scoreboard")
+            resp = self.session.get(self.scoreboard_URL)
         except:
             failed = True
 
@@ -165,11 +361,12 @@ class BackEnd:
                               ]
         return scoreboard_snapshot
 
-    def _get_solves(self, challenge_id):
+
+    def _get_solves_api(self, challenge_id):
         ret = []
 
         try:
-            resp = self.session.get(self.URL + f"/api/v1/challenges/{challenge_id}/solves", timeout=15)
+            resp = self.session.get(self.solve_URL(challenge_id), timeout=15)
         except ReadTimeout:
             return None
 
@@ -190,12 +387,12 @@ class BackEnd:
 
         return ret
 
-    def _get_challenges(self, do_solves=False):
+    def _get_challenges_api(self, do_solves=False):
 
         ret = []
 
         try:
-            resp = self.session.get(self.URL + "/api/v1/challenges", timeout = 30)
+            resp = self.session.get(self.challenges_URL, timeout = 30)
         except ReadTimeout:
             return None
 
@@ -226,7 +423,7 @@ class BackEnd:
                 }
 
             if do_solves:
-                solves = self._get_solves(c["challenge_id"])
+                solves = self._get_solves_api(c["challenge_id"])
                 if solves is None:
                     # Give up on that, this time around
                     do_solves = False
@@ -236,6 +433,8 @@ class BackEnd:
             ret.append(c)
 
         return ret
+
+
 
     def _test_connection(self):
         if self.do_challenges and self.authenticated:
