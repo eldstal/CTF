@@ -25,7 +25,7 @@ def SelectBackend(conf, middle):
                 print(f"Autodetection found backend {name}.")
                 return implementation(conf, middle)
         except Exception as e:
-            traceback.print_exception(e)
+            traceback.print_exc()
             pass
 
     print(f"Autodetection found no suitable backend. Try specifying with --backend.")
