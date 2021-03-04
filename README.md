@@ -2,10 +2,16 @@
 Fetches and displays live scores from Capture The Flag tournaments in your terminal. With *pep* and *zing*!
 
 ## Supported CTF systems:
+Shared, open-source systems:
 * [rCTF](https://github.com/redpwn/rctf)
 * [CTFd](https://ctfd.io)
-* [hxp](https://2020.ctf.link)
 * [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
+
+Custom, one-off or otherwise difficult customers:
+* [hxp](https://2020.ctf.link)
+* [zer0pts](https://2021.ctf.zer0pts.com/index.html#/)
+
+Support for these one-off systems is based on reverse-engineering of non-public APIs or page scraping. As a result, they may stop working or require some tweaking for future CTFs by the same organizers.
 
 ## Example
 [![asciicast](preview.png)](https://asciinema.org/a/mds9ucDsbflnPnrnjFTW9WkcM)
