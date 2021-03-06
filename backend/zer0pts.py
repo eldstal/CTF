@@ -2,6 +2,7 @@ import re
 import time
 from datetime import datetime
 import traceback
+import copy
 
 from bs4 import BeautifulSoup
 import requests
@@ -13,6 +14,8 @@ class BackEnd:
     def help():
         return [
             "url: index page of CTF",
+            "username: (optional)",
+            "password: (optional)",
             "poll-interval: seconds",
         ]
 
@@ -41,6 +44,29 @@ class BackEnd:
             traceback.print_exc()
 
         print(f"Attempting to use zer0pts instance at {self.URL}")
+
+        if conf["username"] != "" and conf["password"] != "":
+            if self._login():
+                print("Logged in successfully.")
+            else:
+                print("Login failed. Scores will still be available, but no challs/solves")
+
+    def _login(self):
+        # Extract a nonce
+        try:
+            resp = self.session.post(self.URL + "/login",
+                json={
+                       "teamname": self.conf["username"],
+                       "password": self.conf["password"] })
+        except:
+            print("Login timed out")
+            return False
+
+        if resp.status_code != 200:
+            return False
+
+        return True
+
 
 
     def _identify_api_server(self, url):
@@ -88,7 +114,9 @@ class BackEnd:
     def _get_scoreboard_and_challenges(self):
 
         teams = []
-        challs = []
+
+        # This has unordered solves, as tuples of (time,team_id)
+        challs_by_name = {}
 
         failed = False
 
@@ -105,18 +133,16 @@ class BackEnd:
             print(resp)
             return None
 
-        for chall in data["ranking"]["tasks"]:
-            # TODO: This
-            continue
-            c = {}
-            c["challenge_id"] = chall["challenge_id"]
-            c["name"] = chall["challenge"]
-            c["categories"] = []
-            c["points"] = chall["points"]
-            c["solves"] = []
-            challs.append(c)
-
-        #print(challs)
+        # Only visible to logged-in users
+        if "challenges" in data:
+            for chall in data["challenges"]:
+                c = {}
+                c["challenge_id"] = chall["id"]
+                c["name"] = chall["name"]
+                c["categories"] = chall["tags"]
+                c["points"] = chall["score"]
+                c["solves"] = []
+                challs_by_name[c["name"]] = c
 
         for team in data["ranking"]["standings"]:
 
@@ -128,9 +154,16 @@ class BackEnd:
 
             teams.append(t)
 
-            for s in team["taskStats"]:
-                # TODO: Solves
-                pass
+            for k,v in team["taskStats"].items():
+                if k not in challs_by_name: continue
+                challs_by_name[k]["solves"].append((v["time"], t["team_id"]))
+
+        # Convert the challenge dicts to the right format
+        challs = []
+        for k,v in challs_by_name.items():
+            c = copy.copy(v)
+            c["solves"] = [ team_id for time,team_id in sorted(v["solves"]) ]
+            challs.append(c)
 
         return teams,challs
 
