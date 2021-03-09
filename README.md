@@ -205,6 +205,7 @@ Omitted fields indicate that data is not available, so frontend should format ac
 
 ## Backends
 * JustCTF
+* [ctf4hire](https://ctf4hire.com/info)
 * [picoCTF](https://github.com/picoCTF/picoCTF)
 * [MITRE](https://github.com/mitre-cyber-academy/ctf-scoreboard)
 * [google](https://github.com/google/ctfscoreboard)
