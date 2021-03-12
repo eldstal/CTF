@@ -29,6 +29,12 @@ class BackEnd:
         # This is in the footer of every page.
         if "Powered by CTFd" in resp.text:
             return True
+
+        # nahamcon2021 was hosted by ctf4hire, and they
+        # appear to use a patched ctfd
+        if "https://ctf4hire.com" in resp.text:
+            return True
+
         return False
 
     def __init__(self, conf, middleend):

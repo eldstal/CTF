@@ -10,6 +10,7 @@ Shared, open-source systems:
 Custom, one-off or otherwise difficult customers:
 * [hxp](https://2020.ctf.link)
 * [zer0pts](https://2021.ctf.zer0pts.com/index.html#/)
+* [ctf4hire](https://ctf4hire.com/info) (via ctfd backend)
 
 Support for these one-off systems is based on reverse-engineering of non-public APIs or page scraping. As a result, they may stop working or require some tweaking for future CTFs by the same organizers.
 
@@ -205,7 +206,6 @@ Omitted fields indicate that data is not available, so frontend should format ac
 
 ## Backends
 * JustCTF
-* [ctf4hire](https://ctf4hire.com/info)
 * [picoCTF](https://github.com/picoCTF/picoCTF)
 * [MITRE](https://github.com/mitre-cyber-academy/ctf-scoreboard)
 * [google](https://github.com/google/ctfscoreboard)
