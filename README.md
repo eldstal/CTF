@@ -204,6 +204,11 @@ Omitted fields indicate that data is not available, so frontend should format ac
 
 # TODO
 
+## Cool features
+* Additional info
+  * Global solve rate
+  * Solves over time graph?!
+
 ## Backends
 * JustCTF
 * [picoCTF](https://github.com/picoCTF/picoCTF)
