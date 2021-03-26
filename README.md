@@ -8,6 +8,7 @@ Shared, open-source systems:
 * [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
 
 Custom, one-off or otherwise difficult customers:
+* [angstrom](https://2021.angstromctf.com)
 * [hxp](https://2020.ctf.link)
 * [zer0pts](https://2021.ctf.zer0pts.com/index.html#/)
 * [ctf4hire](https://ctf4hire.com/info) (via ctfd backend)
@@ -208,6 +209,9 @@ Omitted fields indicate that data is not available, so frontend should format ac
 * Additional info
   * Global solve rate
   * Solves over time graph?!
+
+## Useful features
+* Some sort of log sink. We can't just `print()` to the terminal because the frontend owns the terminal. Ideally, each frontend should be able to provide that sink, so that it can display text as appropriate.
 
 ## Backends
 * JustCTF
