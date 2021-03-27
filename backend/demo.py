@@ -1,3 +1,4 @@
+import logging
 import random
 import time
 import threading
@@ -25,6 +26,7 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+        self.log = logging.getLogger(__name__)
 
         self.running = False
 
@@ -80,6 +82,8 @@ class BackEnd:
     def _main(self):
         # The bootup data
         self._send_snapshot()
+
+        self.log.info("Demo categories: " + str(self.categories))
 
         while self.running:
             time.sleep(self.conf["poll-interval"])
@@ -175,10 +179,10 @@ class BackEnd:
         #self._dump_ranking()
 
     def _dump_ranking(self):
-        print("Ranking:")
+        self.log.info("Ranking:")
         ranking = [ (t["place"], tid, t) for tid,t in self.teams.items() ]
         ranking = sorted(ranking, key=lambda x: x[0])
 
         for place,tid,t in ranking:
-            print(f"  {place}: {t['score']}  {tid}  {t['name']}")
+            self.log.info(f"  {place}: {t['score']}  {tid}  {t['name']}")
 

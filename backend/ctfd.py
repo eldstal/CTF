@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from datetime import datetime
@@ -40,6 +41,7 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+        self.log = logging.getLogger(__name__)
 
         if conf["url"] == "":
             raise RuntimeError("This backend requires a URL")
@@ -47,7 +49,7 @@ class BackEnd:
 
         # Help the user out a little bit, they can specify some various links
         self.base_URL = self._baseurl(conf["url"])
-        print(f"Attempting to use CTFd instance at {self.base_URL}")
+        self.log.info(f"Attempting to use CTFd instance at {self.base_URL}")
 
 
         self.session = requests.Session()
@@ -59,12 +61,12 @@ class BackEnd:
 
         if conf["username"] != "" and conf["password"] != "":
             if self._login():
-                print("Logged in successfully.")
+                self.log.info("Logged in successfully.")
                 self.authenticated = True
                 self.do_challenges = True
                 self.do_solves = True
             else:
-                print("Login failed. Scores will still be available, but no challs/solves")
+                self.log.warning("Login failed. Scores will still be available, but no challs/solves")
 
         # This sets up the URLs and functions based on
         # autodetection of various ctfd versions. Not sure why there's such fragmentation.
@@ -77,7 +79,7 @@ class BackEnd:
         # The scoreboard can be queried in a single request, so we can
         # Just turn off challenge queries (which are quite cumbersome)
         if not self._test_connection():
-            print("Connection test failed. You may need to authenticate, or the CTF hasn't started yet.")
+            self.log.warning("Connection test failed. You may need to authenticate, or the CTF hasn't started yet.")
 
 
     def run(self):
@@ -111,7 +113,7 @@ class BackEnd:
     def _detect_version(self):
         api_resp = self.session.get(self.base_URL + "/api/v1/scoreboard")
         if api_resp.status_code == 200:
-            print("Using CTFd REST API.")
+            self.log.info("Using CTFd REST API.")
             self.scoreboard_URL = self.base_URL + "/api/v1/scoreboard"
             self.solve_URL = lambda challenge_id: self.base_URL + f"/api/v1/challenges/{challenge_id}/solves"
             self.challenges_URL = self.base_URL + "/api/v1/challenges"
@@ -129,7 +131,7 @@ class BackEnd:
             api_chals = self.session.get(self.base_URL + "/chals")
             j = api_chals.json()
             if api_chals.status_code == 200:
-                print("Using sneaky API")
+                self.log.info("Using sneaky API")
                 self.scoreboard_URL = self.base_URL + "/scoreboard"
                 self.solve_URL = lambda challenge_id: self.base_URL + f"/chal/{challenge_id}/solves"
                 self.challenges_URL = self.base_URL + "/chals"
@@ -143,7 +145,7 @@ class BackEnd:
             pass
 
 
-        print("Unable to identify CTFd API version. Falling back to scrape and parse.")
+        self.log.info("Unable to identify CTFd API version. Falling back to scrape and parse.")
         self.scoreboard_URL = self.base_URL + "/scoreboard"
         self.solve_URL = lambda challenge_id: self.base_URL + "/404"
         self.challenges_URL = self.base_URL + "/challenges"
@@ -165,7 +167,7 @@ class BackEnd:
 
         # Can't even load the login form
         if failed or loginpage.status_code != 200:
-            print("Failed to load login page")
+            self.log.error("Failed to load login page")
             return False
 
         soup = BeautifulSoup(loginpage.text, "html.parser")
@@ -176,7 +178,7 @@ class BackEnd:
                             # This has the sneaky API
                             lambda tag: tag.name == "input" and (tag.has_attr("name") and tag["name"] == "nonce")
                           ])["value"]
-        print(f"Login nonce: {nonce}")
+        self.log.info(f"Login nonce: {nonce}")
 
         try:
             resp = self.session.post(self.base_URL + "/login", allow_redirects=False,
@@ -185,7 +187,7 @@ class BackEnd:
                        "name": self.conf["username"],
                        "password": self.conf["password"] })
         except:
-            print("Login timed out")
+            self.log.warning("Login timed out")
             return False
 
         # A 200 is a failed login, actually.
@@ -210,13 +212,13 @@ class BackEnd:
         try:
             msg = resp.json()
         except:
-            print("Solves fetch failed:")
-            print(resp.text)
+            self.log.warning("Solves fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         if not ("teams" in msg):
-            print("solves fetch failed out:")
-            print(msg)
+            self.log.warning("solves fetch failed out:")
+            self.log.warning(msg)
             return ret
 
         for solv in msg["teams"]:
@@ -234,20 +236,20 @@ class BackEnd:
             return None
 
         if resp.status_code != 200:
-            print("chall fetch failed:")
-            print(resp.text)
+            self.log.warning("chall fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         try:
             msg = resp.json()
         except:
-            print("Chall fetch failed:")
-            print(resp.text)
+            self.log.warning("Chall fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         if not ("game" in msg):
-            print("chall fetch failed:")
-            print(msg)
+            self.log.warning("chall fetch failed:")
+            self.log.warning(msg)
             return None
 
         for row in msg["game"]:
@@ -291,7 +293,7 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("Chall fetch failed")
+            self.log.warning("Chall fetch failed")
             return None
 
         # BS filters to find the elements that we are interested in
@@ -342,18 +344,18 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("Scoreboard fetch failed")
+            self.log.error("Scoreboard fetch failed")
             return None
 
         try:
             msg = resp.json()
         except:
-            print("Leaderboard fetch failed")
+            self.log.error("Leaderboard fetch failed")
             return None
 
         if not ("success" in msg and msg["success"] == True):
-            print("leaderboard fetch failed:")
-            print(msg)
+            self.log.error("leaderboard fetch failed:")
+            self.log.error(msg)
             return None
 
 
@@ -379,13 +381,13 @@ class BackEnd:
         try:
             msg = resp.json()
         except:
-            print("Solves fetch failed:")
-            print(resp.text)
+            self.log.warning("Solves fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         if not ("success" in msg and msg["success"] == True):
-            print("solves fetch failed out:")
-            print(msg)
+            self.log.warning("solves fetch failed out:")
+            self.log.warning(msg)
             return ret
 
         for solv in msg["data"]:
@@ -403,20 +405,20 @@ class BackEnd:
             return None
 
         if resp.status_code != 200:
-            print("chall fetch failed:")
-            print(resp.text)
+            self.log.warning("chall fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         try:
             msg = resp.json()
         except:
-            print("Chall fetch failed:")
-            print(resp.text)
+            self.log.warning("Chall fetch failed:")
+            self.log.warning(resp.text)
             return None
 
         if not ("success" in msg and msg["success"] == True):
-            print("chall fetch failed:")
-            print(msg)
+            self.log.warning("chall fetch failed:")
+            self.log.warning(msg)
             return None
 
         for row in msg["data"]:
@@ -444,7 +446,7 @@ class BackEnd:
 
     def _test_connection(self):
         if self.do_challenges and self.authenticated:
-            print("Testing server latency...")
+            self.log.info("Testing server latency...")
 
             t0 = time.time()
             challs = self._get_challenges(False)
@@ -457,7 +459,7 @@ class BackEnd:
 
             chall_duration = int(t1 - t0)
             if chall_duration > 10:
-                print(f"Fetching challenges took {chall_duration} seconds! This host is probably slow or overloaded. Disabling challenges/solves.")
+                self.log.info(f"Fetching challenges took {chall_duration} seconds! This host is probably slow or overloaded. Disabling challenges/solves.")
                 self.do_challenges = False
                 self.do_solves = False
 
@@ -470,7 +472,7 @@ class BackEnd:
 
             solve_duration = int(t2 - t1)
             if solve_duration > 15:
-                print(f"Fetching a few solves took {solve_duration} seconds! This host is probably slow or overloaded. Disabling solves.")
+                self.log.warning(f"Fetching a few solves took {solve_duration} seconds! This host is probably slow or overloaded. Disabling solves.")
                 self.do_solves = False
 
         return True

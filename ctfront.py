@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 
+import logging
 import argparse
 import os
 import json
 import threading
 
+from log import FuncHandler
 
-
-from frontend import FRONTENDS
+import frontend
 import middleend.basic
-from backend import BACKENDS
+import backend
 
 
 def list_frontends():
     print("Frontends:")
-    for name,cls in FRONTENDS.items():
+    for name,cls in frontend.FRONTENDS.items():
         print(f"  {name}")
         try:
             for line in cls.help():
@@ -24,7 +25,7 @@ def list_frontends():
 
 def list_backends():
     print("Backends:")
-    for name,cls in BACKENDS.items():
+    for name,cls in backend.BACKENDS.items():
         print(f"  {name}")
         try:
             for line in cls.help():
@@ -136,9 +137,23 @@ def boot_thread(func):
     t.start()
     return t
 
+def setup_logging():
+    handler = FuncHandler()
+
+    logging.basicConfig(format="%(message)s", level=logging.INFO, handlers=[handler])
+
+    # Any module can do this now and get a proper logger.
+    logger = logging.getLogger(__name__)
+
+    return logger,handler
 
 
 def main():
+    # A logger that the frontend can do whatever it wants with.
+    # This allows us to stop using print() and the frontend can
+    # own the terminal fully.
+    log, log_handler = setup_logging()
+    #log_handler.add_func(print)
 
     conf = load_config()
     if conf is None:
@@ -148,11 +163,16 @@ def main():
         print("No frontend specified. Look at --list-frontends")
         return 1
 
-    front = [ FRONTENDS[name](conf) for name in conf["frontend"] ]
+    front = [ frontend.FRONTENDS[name](conf) for name in conf["frontend"] ]
+
+    for f in front:
+        log_handler.add_func(f.handle_log)
+
+    log.info("Log initialized")
 
     middle = middleend.basic.MiddleEnd(conf, front)
 
-    back = BACKENDS[conf["backend"]](conf, middle)
+    back = backend.BACKENDS[conf["backend"]](conf, middle)
 
     if back is None:
         return 1

@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 
@@ -34,7 +35,7 @@ class BackEnd:
 
         # Help the user out a little bit, they can specify some various links
         self.URL = self._baseurl(conf["url"])
-        print(f"Attempting to use rCTF instance at {self.URL}")
+        self.log.info(f"Attempting to use rCTF instance at {self.URL}")
 
 
         self.session = requests.Session()
@@ -47,13 +48,13 @@ class BackEnd:
 
         if "auth" in conf:
             if self._login():
-                print("Logged in successfully.")
+                self.log.info("Logged in successfully.")
                 self.authenticated = True
                 self.do_challenges = True
                 self.do_solves = True
 
             else:
-                print("Login failed. Scores will still be available, but no challs/solves")
+                self.log.warning("Login failed. Scores will still be available, but no challs/solves")
 
 
         self._test_latency()
@@ -96,7 +97,7 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("Login failed.")
+            self.log.warning("Login failed.")
             return False
 
         if msg["kind"] == "goodLogin":
@@ -119,7 +120,7 @@ class BackEnd:
                 failed = True
 
             if failed or "kind" not in msg or msg["kind"] != "goodLeaderboard":
-                print("leaderboard fetch failed")
+                self.log.warning("leaderboard fetch failed")
                 return None
 
             expected_length = msg["data"]["total"]
@@ -154,8 +155,8 @@ class BackEnd:
                 return None
 
             if msg["kind"] != "goodChallengeSolves":
-                print("solves fetch failed out:")
-                print(msg)
+                self.log.warning("solves fetch failed out:")
+                self.log.warning(msg)
                 return ret
 
             for s in msg["data"]["solves"]:
@@ -176,7 +177,7 @@ class BackEnd:
             failed = True
 
         if failed or not ("kind" in msg and msg["kind"] == "goodChallenges"):
-            print("chall fetch failed")
+            self.log.warning("chall fetch failed")
             return None
 
         for row in msg["data"]:
@@ -202,7 +203,7 @@ class BackEnd:
 
     def _test_latency(self):
         if self.do_challenges and self.authenticated:
-            print("Testing server latency...")
+            self.log.info("Testing server latency...")
 
             t0 = time.time()
             challs = self._get_challenges(True)
@@ -210,7 +211,7 @@ class BackEnd:
 
             chall_duration = int(t1 - t0)
             if chall_duration > 10:
-                print(f"Fetching challenges/solves took {chall_duration} seconds! This host is probably slow or overloaded. Disabling challenges/solves.")
+                self.log.warning(f"Fetching challenges/solves took {chall_duration} seconds! This host is probably slow or overloaded. Disabling challenges/solves.")
                 self.do_challenges = False
                 self.do_solves = False
 

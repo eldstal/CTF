@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 import hashlib
@@ -26,6 +27,7 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+        self.log = logging.getLogger(__name__)
 
         if conf["url"] == "":
             raise RuntimeError("This backend requires a URL")
@@ -33,7 +35,7 @@ class BackEnd:
 
         # Help the user out a little bit, they can specify some various links
         self.URL = self._baseurl(conf["url"])
-        print(f"Attempting to use RTB-CTF instance at {self.URL}")
+        self.log.info(f"Attempting to use RTB-CTF instance at {self.URL}")
 
         self.session = requests.Session()
 
@@ -72,7 +74,7 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("scoreboard fetch failed:")
+            self.log.warning("scoreboard fetch failed:")
             return None
 
         # BS filters to find the elements that we are interested in

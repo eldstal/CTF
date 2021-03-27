@@ -48,6 +48,9 @@ class FrontEnd:
         # Also contains self-posted actions, like "redraw"
         self.events = queue.Queue()
 
+        # A list of text line strings received as log text
+        self.log_text = []
+
         pass
 
     def run(self):
@@ -64,6 +67,10 @@ class FrontEnd:
     # An event from the middle-end about something that changed
     def handle_event(self, event):
         self.events.put(event)
+
+    def handle_log(self, msg):
+        self.log_text.append(msg)
+        self.log_text = self.log_text[-1000:]
 
 
     def _palette(self, screen):
