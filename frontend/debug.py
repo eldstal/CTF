@@ -33,3 +33,6 @@ class FrontEnd:
     # An event from the middle-end about something that changed
     def handle_event(self, event):
         self.events.put(event)
+
+    def handle_log(self, msg):
+        print("LOG: " + msg)

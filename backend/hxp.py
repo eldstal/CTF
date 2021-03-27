@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from datetime import datetime
@@ -34,6 +35,7 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+        self.log = logging.getLogger(__name__)
 
         if conf["url"] == "":
             raise RuntimeError("This backend requires a URL")
@@ -41,7 +43,7 @@ class BackEnd:
 
         # Help the user out a little bit, they can specify some various links
         self.URL = self._baseurl(conf["url"])
-        print(f"Attempting to use hxp instance at {self.URL}")
+        self.log.info(f"Attempting to use hxp instance at {self.URL}")
 
         self.session = requests.Session()
 
@@ -90,7 +92,7 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("Chall fetch failed")
+            self.log.warning("Chall fetch failed")
             return None
 
         # BS filters to find the elements that we are interested in
@@ -141,7 +143,7 @@ class BackEnd:
             # If this doesn't hold, the page format has changed.
             # This backend isn't compatible anymore.
             if len(team_solves) != len(challs):
-                print("Backend has no idea how to parse this table. CTF website has probably changed.")
+                self.log.error("Backend has no idea how to parse this table. CTF website has probably changed.")
                 assert(False)
 
             for c_index in range(len(team_solves)):

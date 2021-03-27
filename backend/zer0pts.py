@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from datetime import datetime
@@ -30,6 +31,7 @@ class BackEnd:
     def __init__(self, conf, middleend):
         self.conf = conf
         self.middle = middleend
+        self.log = logging.getLogger(__name__)
 
         if conf["url"] == "":
             raise RuntimeError("This backend requires a URL")
@@ -40,16 +42,15 @@ class BackEnd:
         try:
             self.URL = self._identify_api_server(conf["url"])
         except Exception as e:
-            print("The zer0pts backend does not support this CTF system. Perhaps a patch is necessary.")
-            traceback.print_exc()
+            self.log.exception("The zer0pts backend does not support this CTF system. Perhaps a patch is necessary.")
 
-        print(f"Attempting to use zer0pts instance at {self.URL}")
+        self.log.info(f"Attempting to use zer0pts instance at {self.URL}")
 
         if conf["username"] != "" and conf["password"] != "":
             if self._login():
-                print("Logged in successfully.")
+                self.log.info("Logged in successfully.")
             else:
-                print("Login failed. Scores will still be available, but no challs/solves")
+                self.log.warning("Login failed. Scores will still be available, but no challs/solves")
 
     def _login(self):
         # Extract a nonce
@@ -59,7 +60,7 @@ class BackEnd:
                        "teamname": self.conf["username"],
                        "password": self.conf["password"] })
         except:
-            print("Login timed out")
+            self.log.warning("Login timed out")
             return False
 
         if resp.status_code != 200:
@@ -82,7 +83,7 @@ class BackEnd:
 
         js = self.session.get(base + jspath)
         api_server = re.match(".*\"(http(s?)://api[^\"]*[^\"/])(/?)\".*", js.text)[1]
-        print(f"Identified API server {api_server}")
+        self.log.info(f"Identified API server {api_server}")
 
         return api_server
 
@@ -129,8 +130,8 @@ class BackEnd:
             failed = True
 
         if failed or resp.status_code != 200:
-            print("Chall fetch failed")
-            print(resp)
+            self.log.warning("Chall fetch failed")
+            self.log.warning(resp)
             return None
 
         # Only visible to logged-in users

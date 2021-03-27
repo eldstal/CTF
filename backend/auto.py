@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 # A pseudo-backend which just tries to pick one of the real ones properly.
@@ -10,8 +11,10 @@ def SelectBackend(conf, middle):
 
     from backend import BACKENDS
 
+    log = logging.getLogger(__name__)
+
     if len(conf["url"]) < 1:
-        print(f"Backend autodetection requires a URL. Try --url or specify a backend using --backend")
+        log.error(f"Backend autodetection requires a URL. Try --url or specify a backend using --backend")
         return None
 
     for name,implementation in BACKENDS.items():
@@ -22,12 +25,11 @@ def SelectBackend(conf, middle):
         try:
             if implementation.supports(conf, conf["url"]):
                 # It's a hit!
-                print(f"Autodetection found backend {name}.")
+                log.info(f"Autodetection found backend {name}.")
                 return implementation(conf, middle)
         except Exception as e:
-            traceback.print_exc()
-            pass
+            log.exception("Backend initialization failed.")
 
-    print(f"Autodetection found no suitable backend. Try specifying with --backend.")
+    log.error(f"Autodetection found no suitable backend. Try specifying with --backend.")
     return None
 

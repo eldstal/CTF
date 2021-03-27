@@ -1,8 +1,12 @@
+import logging
+
 from copy import deepcopy as CP
 
 class MiddleEnd:
     def __init__(self, conf, frontends):
         self.conf = conf
+
+        self.log = logging.getLogger(__name__)
 
         # If the user eats crayons and passes in a single frontend instead of a list,
         # that's fine. It's fine. We can clean up your mess for you. No problem.
@@ -25,6 +29,8 @@ class MiddleEnd:
             }
 
         }
+
+        self.log.info("Middle-end initialized.")
 
     def start(self):
         pass
