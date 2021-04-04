@@ -51,7 +51,7 @@ class FrontEnd:
         # A list of text line strings received as log text
         self.log_text = []
 
-        pass
+
 
     def run(self):
         self.running = True
@@ -91,14 +91,25 @@ class FrontEnd:
             "awards":  { "colour": self.color["award"], "bg": self.color["bg"] },
         }
 
-    def _limits(self, screen):
-        # At most, as many places as will fit in the window
-        max_len = screen.height - 1
-        if "max-count" in self.conf:
-            self.max_count = min(self.conf["max-count"], max_len)
+    # Provide a team object
+    def _team_is_focused(self, team):
+        for expr in self.conf["focus-teams"]:
+            if re.match(expr, team["name"]) != None: return True
+        return False
+
+    def _attr_by_team(self, team):
+        if self._team_is_focused(team):
+            return self.attr["focused"]
         else:
-            # Nobody specified, so let's default to a full screen of scores
-            self.max_count = max_len
+            return self.attr["default"]
+
+
+    def _displays(self, screen):
+        self.display_score = ScoreboardDisplay(screen, self.conf,
+                                               attr=self.attr["default"],
+                                               focused_attr=self.attr["focused"],
+                                               awards_attr=self.attr["awards"]
+                                              )
 
     def _poll_events(self):
         try:
@@ -109,7 +120,7 @@ class FrontEnd:
     def _main(self, screen):
         self.screen = screen
         self._palette(screen)
-        self._limits(screen)
+        self._displays(screen)
         self._redraw()
         while self.running:
             # This should be two different queues, but there's no select() implementation.
@@ -250,116 +261,11 @@ class FrontEnd:
 
         return cleaned
 
-    # Generate two lists of teams which should go on the toplist
-    # This takes care of cropping the top list to fit the focused teams underneath
-    # returns (toplist, extra_focused_teams)
-    def _make_toplist(self):
-        # Pick out which teams to even show
-        ranking = [ (team["place"], team) for tid,team in self.teams.items() ]
-        ranking = sorted(ranking, key=lambda x: x[0])
-
-        boundary = self.max_count
-        toplist = ranking[:boundary]
-
-        focused = []
-        for r,team in ranking[boundary:]:
-            if self._team_is_focused(team):
-                focused.append((r,team))
-
-        if len(toplist) + len(focused) > boundary:
-            toplist = toplist[:boundary - len(focused)]
-
-        return toplist, focused
-
-    # Provide a team object
-    def _team_is_focused(self, team):
-        for expr in self.conf["focus-teams"]:
-            if re.match(expr, team["name"]) != None: return True
-        return False
-
-    def _attr_by_team(self, team):
-        if self._team_is_focused(team):
-            return self.attr["focused"]
-        else:
-            return self.attr["default"]
-
-    # Return a list of strings, aligned properly
-    # Will also color the focused team(s)
-    def _print_table(self, screen):
-        columns = [
-                    (" ",  "marker"),
-                    ("#",  "place"),
-                    ("Score", "score"),
-                    ("          ", "awards"),   # Prints up to 5x unicode trophy, which may be quite wide.
-                    ("Team",  "name"),
-                  ]
-
-        toplist, focused = self._make_toplist()
-
-        toplist = toplist + focused
-
-        # Each cell is a tuple of (text, attr)
-        # The +1 gives us a header line at the top
-        table = [ [ "" for c in columns ] for _ in range(len(toplist) + 1) ]
-
-        for c in range(len(columns)):
-            header,field = columns[c]
-
-            table[0][c] = ( header, self.attr["default"])
-
-            for i in range(len(toplist)):
-                team = toplist[i][1]
-
-                text = self._sanitize(str(team[field]))
-
-                # Some fields are colored differently
-                attr = self.attr["default"]
-                if field == "name": attr = self._attr_by_team(team)
-                elif field == "awards": attr = self.attr["awards"]
-
-                table[i+1][c] = (text, attr)
-
-
-        column_widths = [ max([ len(row[c][0]) for row in table ]) for c in range(len(columns)) ]
-
-        # X-coordinate of each column, based on the widest of all preceding columns
-        padding = 1
-        col_offset = lambda c: sum(column_widths[:c]) + (padding * (c - 1))
-
-        h,w = self.screen.dimensions
-
-        # Center the table
-        x0 = (w - col_offset(len(columns))) // 2
-        y0 = (h - len(table)) // 2
-
-        # Super big tables don't fall outside the window
-        x0 = max(0, x0)
-        y0 = max(0, y0)
-
-        for r in range(len(table)):
-            for c in range(len(columns)):
-                text,attr = table[r][c]
-                x = x0 + col_offset(c)
-                y = y0 + r
-
-                # Don't overflow the window
-                if y > h: break
-
-                if len(text) > w-x:
-                    text = text[:w-x-3] + "..."
-
-                screen.print_at(text, x, y, transparent=True, **attr)
-
-
     def _redraw(self):
+        self.display_score.update_scores(self.teams)
+        scene = Scene([self.display_score], clear=True)
 
-        self.screen.clear_buffer(self.color["fg"],
-                                 Screen.A_NORMAL,
-                                 self.color["bg"])
-
-        self._print_table(self.screen)
-
-        self.screen.refresh()
+        self.screen.play([scene], repeat=False, stop_on_resize=True)
 
     # Generate a scene with a snapshot of the screen overwritten by some list of transition effects
     def _trans(self, effects):
@@ -372,7 +278,7 @@ class FrontEnd:
 
     def _animate(self, scenes):
         if type(scenes) != list:
-            effects = [ effects ]
+            scenes = [ scenes ]
 
         self.screen.play(scenes, repeat=False, stop_on_resize=True)
 
@@ -388,4 +294,7 @@ class FrontEnd:
                                             shade_colors=self.color["firstblood_shades"],
                                             team_color=attr["colour"])])
                  ])
+
+
+
 
