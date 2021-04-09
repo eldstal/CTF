@@ -179,7 +179,7 @@ class BackEnd:
         # The scoreboard comes back in some not very interesting order.
         # It appears to be ordered by team ID, i.e. when the team was created.
         by_score = lambda t: t["score"]
-        by_stime = lambda t: ciso8601.parse_datetime(t["lastSolve"]).timestamp() if t["score"] > 0 else 0
+        by_stime = lambda t: ciso8601.parse_datetime(t["lastSolve"]).timestamp() if "lastSolve" in t else 0
         by_ttime = lambda t: ciso8601.parse_datetime(t["created"]).timestamp()
 
         # Primary: score
