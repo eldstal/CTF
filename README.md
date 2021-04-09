@@ -10,6 +10,7 @@ Shared, open-source systems:
 Custom, one-off or otherwise difficult customers:
 * [angstrom](https://2021.angstromctf.com)
 * [hxp](https://2020.ctf.link)
+* [Midnightsun](https://ctf.midnightsunctf.se)
 * [zer0pts](https://2021.ctf.zer0pts.com/index.html#/)
 * [ctf4hire](https://ctf4hire.com/info) (via ctfd backend)
 
