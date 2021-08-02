@@ -4,6 +4,7 @@ import backend.demo
 
 # Specific implementations for scoreboard managers
 import backend.rctf          # Introduced for diceCTF 2021
+import backend.ractf         # Used by Really Awesome CTF and RaRCTF
 import backend.ctfd          # This is a pretty popular system
 import backend.hxp           # Custom but predictable. We love hxp CTF!
 import backend.rtbctf        # RootTheBox CTF. Doesn't give us solves, sadly.
@@ -18,6 +19,7 @@ BACKENDS = {
               "ctfd"     : backend.ctfd.BackEnd,
               "rctf"     : backend.rctf.BackEnd,
               "rtbctf"   : backend.rtbctf.BackEnd,
+              "ractf"    : backend.ractf.BackEnd,
 
               # Potential one-offs. These are down here because they are super
               # unlikely to be relevant during autodetection
