@@ -20,21 +20,12 @@ class BackEnd:
     @staticmethod
     def supports(conf, url):
 
-        url_base = BackEnd._baseurl(url)
-
         # Return True if the url seems like a system we support
-        resp = requests.get(url)
 
         # This is a compiled hyperblob of reactJS code. Absolutely awful.
         # The best heuristic I've found is the RACTF credit embedded in one
         # of the javascript blobs.
-
-        soup = BeautifulSoup(resp.text, "html.parser")
-
-        filt_script = lambda tag: tag.name == "script" and tag.has_attr("src")
-
-        for js in soup.findAll(filt_script):
-            js_url = url_base + js["src"]
+        for js_url in BackEnd._jsurls(url):
             js_resp = requests.get(js_url)
             if "RACTF" in js_resp.text:
                 return True
@@ -53,18 +44,50 @@ class BackEnd:
 
         return url_base
 
+    @staticmethod
+    def _jsurls(url):
+
+        url_base = BackEnd._baseurl(url)
+        resp = requests.get(url)
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        filt_script = lambda tag: tag.name == "script" and tag.has_attr("src")
+
+        js_urls = []
+        for js in soup.findAll(filt_script):
+            js_path = js["src"]
+            if js_path[0] != "/": continue
+
+            js_url = url_base + js_path
+            js_urls.append(js_url)
+
+        return js_urls
+
     def _apiurl(self, url):
         # The API may be on a different host. We have to extract it from the javascript sources.
 
-        resp = requests.get(BackEnd._baseurl(url))
+        # This works for RaRCTF 2021
+        if True:
+            resp = requests.get(BackEnd._baseurl(url))
+            api_re = re.compile(".*apiDomain:'([^']+)'.*")
+            match = api_re.match(resp.text)
+            if match is not None:
+                return match.groups(1)[0] + "/api/v2"
 
-        api_re = re.compile(".*apiDomain:'([^']+)'.*")
-        match = api_re.match(resp.text)
+        # RACTF2020 doesn't have that, but the API url is in the javascript blobs
+        if True:
+            api_re = re.compile(".*\"(https://[^\"]+/api/v2)\".*")
+            for js_url in BackEnd._jsurls(url):
+                js_resp = requests.get(js_url)
+                match = api_re.match(js_resp.text)
+                if match is not None:
+                    return match.groups(1)[0]
 
-        if match is None:
+
+
             raise RuntimeError("Unable to determine API URL. This may not be an RACTF system.")
 
-        return match.groups(1)[0]
 
 
     def __init__(self, conf, middleend):
@@ -107,7 +130,7 @@ class BackEnd:
 
         failed = False
         try:
-            resp = self.session.get(self.URL + "/api/v2/leaderboard/team/?limit=1000")
+            resp = self.session.get(self.URL + "/leaderboard/team/?limit=1000")
         except:
             failed = True
 
