@@ -6,6 +6,7 @@ Shared, open-source systems:
 * [rCTF](https://github.com/redpwn/rctf)
 * [CTFd](https://ctfd.io)
 * [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
+* [Really Awesome CTF](https://github.com/ractf)
 
 Custom, one-off or otherwise difficult customers:
 * [angstrom](https://2021.angstromctf.com)

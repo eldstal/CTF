@@ -153,7 +153,7 @@ class BackEnd:
             t = {}
             t["name"]    = v["name"]
             t["team_id"] = v["id"]
-            t["place"]   = k
+            t["place"]   = k+1
             t["score"]   = v["leaderboard_points"]
 
             teams.append(t)
