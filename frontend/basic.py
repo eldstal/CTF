@@ -14,7 +14,7 @@ class FrontEnd:
     def help():
         return [
                  "focus-teams: one or more teams (name) to always show",
-                 "max-count:   max length of scoreboard"
+                 "max-length:   max length of scoreboard"
                ]
 
     @staticmethod

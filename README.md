@@ -78,7 +78,7 @@ Reads `~/.ctfront/config.json` which may look like this (everything in there is 
 ```json
 {
    "focus-teams": [ ".uftens.jaltar", "SmygHalloumi" ],
-   "max-count": 10,
+   "max-length": 10,
    "poll-interval": 60,
    "url": "https://ctf.dicega.ng/scores",
    "backend": "auto",

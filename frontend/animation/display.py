@@ -206,8 +206,8 @@ class ScoreboardDisplay(Effect):
     def _limits(self, screen):
         # At most, as many places as will fit in the window
         max_len = screen.height - 1
-        if "max-count" in self.conf:
-            self.max_count = min(self.conf["max-count"], max_len)
+        if "max-length" in self.conf:
+            self.max_count = min(self.conf["max-length"], max_len)
         else:
             # Nobody specified, so let's default to a full screen of scores
             self.max_count = max_len
