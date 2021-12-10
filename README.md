@@ -7,6 +7,7 @@ Shared, open-source systems:
 * [CTFd](https://ctfd.io)
 * [RTB-CTF](https://github.com/abs0lut3pwn4g3/RTB-CTF-Framework)
 * [Really Awesome CTF](https://github.com/ractf)
+* [MilkDrop CTFx](https://github.com/Milkdrop/CTFx)
 
 Custom, one-off or otherwise difficult customers:
 * [angstrom](https://2021.angstromctf.com)
@@ -220,6 +221,7 @@ Omitted fields indicate that data is not available, so frontend should format ac
 * [picoCTF](https://github.com/picoCTF/picoCTF)
 * [MITRE](https://github.com/mitre-cyber-academy/ctf-scoreboard)
 * [google](https://github.com/google/ctfscoreboard)
+* [Mellivora](https://github.com/Nakiami/mellivora)
 * Some customizable "Scrape and parse a table" backend?
   * Maybe that can make it easier to rig a custom one-use backend on demand?
   * For now, take a look at `backends/hxp.py` for an example of beautifulsoup
